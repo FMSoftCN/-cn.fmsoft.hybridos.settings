@@ -1,0 +1,178 @@
+#include <errno.h>
+#include <fcntl.h>
+#include <math.h>
+#include <pthread.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+#include <netinet/in.h>
+#include <sys/ioctl.h>
+#include <sys/select.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <sys/wait.h>
+#include <sys/shm.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/param.h>
+#include <net/if.h>
+#include <net/if_arp.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <sys/timerfd.h>
+#include <stdint.h>        /* Definition of uint64_t */
+
+#include <hibus.h>
+
+#include "../include/inetd.h"
+
+
+static char * scan_template_handler(hibus_conn* conn, const char* from_endpoint, const char* to_method, \
+                                const char* method_param, int *err_code)
+{
+    return "{\"hello world\":9000}";
+}
+
+void * start_template(void * args)
+{
+    // for hibus
+    int fd_socket = -1;                     // socket for communication with hibus
+    hibus_conn * hibus_context = NULL;      // context of communication
+    int ret_code = 0;
+
+    // for timer
+    int fd_timer = -1;                      // fd for timer
+    struct itimerspec new_value;            // start and interval time for timer
+    struct timespec now;                    // time now
+    uint64_t exp = 0;                       // for timer read
+
+    // for select
+    fd_set rfds;
+    int maxfd = 0;
+//    struct timeval tv;
+
+    // for device
+//    int fd_device = -1;
+
+    // step 1: open the device with /dev/xxxxx if necessary
+//    fd_device = open( "/dev/xxxxx, O_RDWR);
+
+    // step 2: read configure file, get the default parameters, and set the device to initial status
+
+
+    // step 3: connect to hibus server
+    fd_socket = hibus_connect_via_unix_socket(SOCKET_PATH, APP_INETD_NAME, RUNNER_TEMPLATE_NAME, &hibus_context);
+    if(fd_socket <= 0)
+    {
+        printf("WIFI DAEMON: connect to HIBUS server error!\n");
+        return NULL;
+    }
+
+    // step 3: register remote invocation
+    ret_code = hibus_register_procedure(hibus_context, METHOD_TEMPLATE_SCAN, NULL, NULL, scan_template_handler);
+    if(ret_code)
+    {
+        printf("Error for hibus_register_procedure, return code is %d\n", ret_code);
+        return NULL;
+    }
+
+    // step 4: register an event
+    hibus_register_event(hibus_context, EVENT_TEMPLATE_SIGNAL, NULL, NULL);
+
+    // step 5: check device status periodically
+    // set timer
+    if(clock_gettime(CLOCK_REALTIME, &now) == -1)
+    {
+        printf("Get now time for template error!\n");
+        return NULL;
+    }
+
+    // start from now
+    new_value.it_value.tv_sec = now.tv_sec;
+    new_value.it_value.tv_nsec = now.tv_nsec;
+
+    // set the interval
+    new_value.it_interval.tv_sec = 1;
+    new_value.it_interval.tv_nsec = 0;
+    
+    // create timer
+    fd_timer = timerfd_create(CLOCK_REALTIME, 0);
+    if(fd_timer == -1)
+    {
+        printf("Create timer for template error!\n");
+        return NULL;
+    }
+
+    // set timer
+    if(timerfd_settime(fd_timer, TFD_TIMER_ABSTIME, &new_value, NULL) == -1)
+    {
+        printf("Set timer for template error!\n");
+        return NULL;
+    }
+
+    FD_ZERO(&rfds);
+    FD_SET(fd_timer, &rfds);
+    maxfd = fd_timer + 1;
+//    FD_SET(fd_device, &rfds);
+//    maxfd = (fd_timer > fd_device)? fd_timer: fd_device;
+//    maxfd ++;
+
+//    tv.tv_sec = xxxx;
+//    tv.tv_usec = 0;
+
+    while(1)
+    {
+//        ret_code = select(maxfd, &rfds, NULL, NULL, &tv);
+        ret_code = select(maxfd, &rfds, NULL, NULL, NULL);
+
+        if(ret_code == -1)
+        {
+            printf("Select function for template error!\n");
+        }
+        else if(ret_code > 0)
+        {
+            if(fd_timer != -1 && FD_ISSET(fd_timer, &rfds))
+            {
+                read(fd_timer, &exp, sizeof(uint64_t));
+                // check the device status, or read device port, then send the event to hibus
+//                hibus_fire_event(hibus_context, EVENT_XXXX_XXXX, "{\"param0\":\"abcd\"}")
+            }
+/*
+            else if(fd_device != -1 && FD_ISSET(fd_device, &rfds))
+            {
+                read(fd_device, content, sizeof(content));
+                // analyze the content
+                hibus_fire_event(hibus_context, EVENT_XXXX_XXXX, "{\"param0\":\"abcd\"}")
+            }
+*/
+        }
+        else            // timeout
+        {
+        }
+
+        FD_ZERO(&rfds);
+        FD_SET(fd_timer, &rfds);
+        maxfd = fd_timer + 1;
+
+//        FD_SET(fd_device, &rfds);
+//        maxfd = (fd_timer > fd_device)? fd_timer: fd_device;
+//        maxfd ++;
+//        tv.tv_sec = xxxx;
+//        tv.tv_usec = 0;
+    }
+
+
+    // step 6: free the resource
+    hibus_revoke_event(hibus_context, EVENT_TEMPLATE_SIGNAL);
+    hibus_revoke_procedure(hibus_context, METHOD_TEMPLATE_SCAN);
+    hibus_disconnect(hibus_context);
+
+//    close(fd_device);
+
+	return NULL;
+}
