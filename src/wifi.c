@@ -36,8 +36,12 @@
 
 static char * scan_wifi_handler(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
 {
-    return "{\"hello world\":9000}";
+    char * ret_code = malloc(100);
+    memset(ret_code, 0, 100);
+    sprintf(ret_code, "{\"hello world\":9000}");
+    return ret_code;
 }
+
 
 int main(void)
 {
@@ -118,26 +122,25 @@ int main(void)
 
     // step 4: register remote invocation
     // for_host and for_app are NULL, means for all hosts and applications
-printf("=============================================== before\n");
     ret_code = hibus_register_procedure(hibus_context, METHOD_WIFI_SCAN, NULL, NULL, scan_wifi_handler);
     if(ret_code)
     {
         printf("Error for hibus_register_procedure, return code is %d\n", ret_code);
         exit(1);
     }
-printf("=============================================== after\n");
 
     // step 5: register an event
     // to_host and to_app are NULL, means for all hosts and applications
-//    hibus_register_event(hibus_context, EVENT_WIFI_SIGNAL, NULL, NULL);
+    hibus_register_event(hibus_context, EVENT_WIFI_SIGNAL, NULL, NULL);
 
 
 
     // step 6: check wifi status periodically
-
+    int timeout = 1000;
     while(1)
     {
-//        hibus_fire_event(hibus_context, EVENT_WIFI_SIGNAL, "");
+        hibus_fire_event(hibus_context, EVENT_WIFI_SIGNAL, "");
+        hibus_wait_and_dispatch_packet(hibus_context, timeout);
         sleep(1);
     }
 
@@ -147,7 +150,7 @@ printf("=============================================== after\n");
 
 
     // step 7: free the resource
-//    hibus_revoke_event(hibus_context, EVENT_WIFI_SIGNAL);
+    hibus_revoke_event(hibus_context, EVENT_WIFI_SIGNAL);
     hibus_revoke_procedure(hibus_context, METHOD_WIFI_SCAN);
     hibus_disconnect(hibus_context);
 

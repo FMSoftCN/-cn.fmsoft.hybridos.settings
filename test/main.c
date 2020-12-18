@@ -33,9 +33,10 @@ static void wifi_signal_handler(hibus_conn* conn, const char* from_endpoint, con
     printf("====== get signal\n");
 }
 
-static void wifi_scan_handler(hibus_conn* conn, const char* from_endpoint, const char* method_name, int ret_code, const char* ret_value)
+static int wifi_scan_handler(hibus_conn* conn, const char* from_endpoint, const char* method_name, int ret_code, const char* ret_value)
 {
     printf("====== get scan result\n");
+    return 0;
 }
 
 int main(void)
@@ -58,15 +59,12 @@ int main(void)
     endpoint = hibus_assemble_endpoint_name_alloc(HIBUS_LOCALHOST, APP_INETD_NAME, RUNNER_WIFI_NAME);
     //hibus_call_procedure_and_wait(hibus_context, endpoint, METHOD_WIFI_SCAN, "{\"abcd\":1234}", 1000, &ret_code, &ret_value);
     ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_SCAN, "{\"abcd\":1234}", 1000, wifi_scan_handler);
-    printf("============return code is %d\n", ret_code);
-    
-    if(0)
-    {
-        hibus_subscribe_event(hibus_context, endpoint, EVENT_WIFI_SIGNAL, wifi_signal_handler);
-    }
+    ret_code ++;
+    hibus_subscribe_event(hibus_context, endpoint, EVENT_WIFI_SIGNAL, wifi_signal_handler);
 
-    while(1)
-    {
+    while(1) 
+    { 
+        hibus_wait_and_dispatch_packet(hibus_context, 1000);
         sleep(1);
     }
 

@@ -41,7 +41,7 @@ static char * scan_template_handler(hibus_conn* conn, const char* from_endpoint,
 void * start_template(void * args)
 {
     // for hibus
-    int fd_socket = -1;                     // socket for communication with hibus
+    int fd_hibus = -1;                      // socket for communication with hibus
     hibus_conn * hibus_context = NULL;      // context of communication
     int ret_code = 0;
 
@@ -66,8 +66,8 @@ void * start_template(void * args)
 
 
     // step 3: connect to hibus server
-    fd_socket = hibus_connect_via_unix_socket(SOCKET_PATH, APP_INETD_NAME, RUNNER_TEMPLATE_NAME, &hibus_context);
-    if(fd_socket <= 0)
+    fd_hibus = hibus_connect_via_unix_socket(SOCKET_PATH, APP_INETD_NAME, RUNNER_TEMPLATE_NAME, &hibus_context);
+    if(fd_hibus <= 0)
     {
         printf("WIFI DAEMON: connect to HIBUS server error!\n");
         return NULL;
@@ -117,10 +117,12 @@ void * start_template(void * args)
 
     FD_ZERO(&rfds);
     FD_SET(fd_timer, &rfds);
-    maxfd = fd_timer + 1;
+    maxfd = fd_timer;
+    FD_SET(fd_hibus, &rfds);
+    maxfd = (maxfd > fd_hibus)? maxfd: fd_hibus;
 //    FD_SET(fd_device, &rfds);
-//    maxfd = (fd_timer > fd_device)? fd_timer: fd_device;
-//    maxfd ++;
+//    maxfd = (maxfd > fd_device)? maxfd: fd_device;
+    maxfd ++;
 
 //    tv.tv_sec = xxxx;
 //    tv.tv_usec = 0;
@@ -141,6 +143,11 @@ void * start_template(void * args)
                 read(fd_timer, &exp, sizeof(uint64_t));
                 // check the device status, or read device port, then send the event to hibus
 //                hibus_fire_event(hibus_context, EVENT_XXXX_XXXX, "{\"param0\":\"abcd\"}")
+            }
+            else if(fd_hibus != -1 && FD_ISSET(fd_hibus, &rfds))
+            {
+                ret_code = hibus_wait_and_dispatch_packet(hibus_context, 1000);
+                printf("hibus_wait_and_dispatch_packet return code is %d\n", ret_code);
             }
 /*
             else if(fd_device != -1 && FD_ISSET(fd_device, &rfds))
