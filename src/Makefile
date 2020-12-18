@@ -1,4 +1,4 @@
-OBJS= wifi.o template.o
+OBJS= wifi.o template.o main.o
 
 EXECUTABLE=inetd 
 INCLUDE_DIR=../include

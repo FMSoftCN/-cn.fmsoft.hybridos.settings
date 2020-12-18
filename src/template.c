@@ -30,6 +30,7 @@
 #include <hibus.h>
 
 #include "../include/inetd.h"
+#include "../include/hibus_template.h"
 
 
 static char * scan_template_handler(hibus_conn* conn, const char* from_endpoint, const char* to_method, \
@@ -73,7 +74,7 @@ void * start_template(void * args)
         return NULL;
     }
 
-    // step 3: register remote invocation
+    // step 4: register remote invocation
     ret_code = hibus_register_procedure(hibus_context, METHOD_TEMPLATE_SCAN, NULL, NULL, scan_template_handler);
     if(ret_code)
     {
@@ -81,10 +82,10 @@ void * start_template(void * args)
         return NULL;
     }
 
-    // step 4: register an event
+    // step 5: register an event
     hibus_register_event(hibus_context, EVENT_TEMPLATE_SIGNAL, NULL, NULL);
 
-    // step 5: check device status periodically
+    // step 6: check device status periodically
     // set timer
     if(clock_gettime(CLOCK_REALTIME, &now) == -1)
     {
@@ -164,17 +165,18 @@ void * start_template(void * args)
 
         FD_ZERO(&rfds);
         FD_SET(fd_timer, &rfds);
-        maxfd = fd_timer + 1;
-
+        maxfd = fd_timer;
+        FD_SET(fd_hibus, &rfds);
+        maxfd = (maxfd > fd_hibus)? maxfd: fd_hibus;
 //        FD_SET(fd_device, &rfds);
-//        maxfd = (fd_timer > fd_device)? fd_timer: fd_device;
-//        maxfd ++;
+//        maxfd = (maxfd > fd_device)? maxfd: fd_device;
+        maxfd ++;
 //        tv.tv_sec = xxxx;
 //        tv.tv_usec = 0;
     }
 
 
-    // step 6: free the resource
+    // step 7: free the resource
     hibus_revoke_event(hibus_context, EVENT_TEMPLATE_SIGNAL);
     hibus_revoke_procedure(hibus_context, METHOD_TEMPLATE_SCAN);
     hibus_disconnect(hibus_context);

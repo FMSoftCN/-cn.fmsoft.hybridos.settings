@@ -24,101 +24,50 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sys/timerfd.h>
 #include <hibus.h>
 
 #include "../include/inetd.h"
-
-#undef  DAEMON
-//#define DAEMON
-
-//#undef  TEST_INTERFACE
-#define TEST_INTERFACE
+#include "../include/hibus_wifi.h"
 
 static char * scan_wifi_handler(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
 {
     char * ret_code = malloc(100);
     memset(ret_code, 0, 100);
     sprintf(ret_code, "{\"hello world\":9000}");
+printf("========================================================================================================= scan_wifi_handler is invoked\n");
     return ret_code;
 }
 
-
-int main(void)
+void * start_wifi(void * args)
 {
-    int fd_socket = -1;
-    hibus_conn * hibus_context = NULL;
+    // for hibus
+    int fd_hibus = -1;                      // socket for communication with hibus
+    hibus_conn * hibus_context = NULL;      // context of communication
     int ret_code = 0;
 
-#ifdef	DAEMON
-    int pid = 0;
+    // for timer
+    int fd_timer = -1;                      // fd for timer
+    struct itimerspec new_value;            // start and interval time for timer
+    struct timespec now;                    // time now
+    uint64_t exp = 0;                       // for timer read
 
-    pid = fork();
-    if(pid < 0)    
-        exit(1);  		        // fork error, son process quits
-    else if(pid > 0) 	        // parent process quits
-        exit(0);
+    // for select
+    fd_set rfds;
+    int maxfd = 0;
 
-    setsid();  
-    pid = fork();
-    if(pid > 0)
-        exit(0); 		        // quits again. close terminal
-    else if(pid < 0)    
-        exit(1);                // fork error, son process quits
+    // step 1: open the device with /dev/xxxxx if necessary.
+    // No device node used in this code.
 
-    for(i = 0; i < NOFILE; i++) // close all file
-        close(i);
-
-    chdir(WORKING_DIRECTORY);   // change working directory
-    umask(0);					// reset mask
-#endif
-
-    // step 1: start other device monitor. One device one thread.
-    // start_bluetooth_monitor();
-
-
-    // step 2: read configure file, get the default parameters 
-
+    // step 2: read configure file, get the default parameters, and set the device to initial status
 
     // step 3: connect to hibus server
-    fd_socket = hibus_connect_via_unix_socket(SOCKET_PATH, APP_INETD_NAME, RUNNER_WIFI_NAME, &hibus_context);
-    if(fd_socket <= 0)
+    fd_hibus = hibus_connect_via_unix_socket(SOCKET_PATH, APP_INETD_NAME, RUNNER_WIFI_NAME, &hibus_context);
+    if(fd_hibus <= 0)
     {
         printf("WIFI DAEMON: connect to HIBUS server error!\n");
-        exit(1);
+        return NULL;
     }
-
-
-    // test of interface
-#ifdef TEST_INTERFACE
-    const char * test_name = NULL;
-    int test_int = -1;
-
-    test_name = hibus_conn_srv_host_name(hibus_context);
-    printf("INET test: server host name is %s\n", test_name);
-
-    test_name = hibus_conn_own_host_name(hibus_context);
-    printf("INET test: host name is %s\n", test_name);
-
-    test_name = hibus_conn_app_name(hibus_context);
-    printf("INET test: app name is %s\n", test_name);
-
-    test_name = hibus_conn_runner_name(hibus_context);
-    printf("INET test: runner name is %s\n", test_name);
-
-    test_int = hibus_conn_socket_fd(hibus_context);
-    printf("INET test: socket is %d\n", test_int);
-
-    test_int = hibus_conn_socket_type(hibus_context);
-    switch(test_int)
-    {
-        case CT_UNIX_SOCKET:
-            printf("INET test: socket type is CT_UNIX_SOCKET\n");
-            break;
-        case CT_WEB_SOCKET:
-            printf("INET test: socket type is CT_WEB_SOCKET\n");
-            break;
-    }
-#endif
 
     // step 4: register remote invocation
     // for_host and for_app are NULL, means for all hosts and applications
@@ -134,20 +83,76 @@ int main(void)
     hibus_register_event(hibus_context, EVENT_WIFI_SIGNAL, NULL, NULL);
 
 
-
-    // step 6: check wifi status periodically
-    int timeout = 1000;
-    while(1)
+    // step 6: check device status periodically
+    // set timer
+    if(clock_gettime(CLOCK_REALTIME, &now) == -1)
     {
-        hibus_fire_event(hibus_context, EVENT_WIFI_SIGNAL, "");
-        hibus_wait_and_dispatch_packet(hibus_context, timeout);
-        sleep(1);
+        printf("Get now time for template error!\n");
+        return NULL;
     }
 
-//int hibus_fire_event (hibus_conn* conn,
-//        const char* bubble_name, const char* bubble_data);
+    // start from now
+    new_value.it_value.tv_sec = now.tv_sec;
+    new_value.it_value.tv_nsec = now.tv_nsec;
 
+    // set the interval
+    new_value.it_interval.tv_sec = 1;
+    new_value.it_interval.tv_nsec = 0;
 
+    // create timer
+    fd_timer = timerfd_create(CLOCK_REALTIME, 0);
+    if(fd_timer == -1)
+    {
+        printf("Create timer for template error!\n");
+        return NULL;
+    }
+
+    // set timer
+    if(timerfd_settime(fd_timer, TFD_TIMER_ABSTIME, &new_value, NULL) == -1)
+    {
+        printf("Set timer for template error!\n");
+        return NULL;
+    }
+
+    FD_ZERO(&rfds);
+    FD_SET(fd_timer, &rfds);
+    maxfd = fd_timer;
+    FD_SET(fd_hibus, &rfds);
+    maxfd = (maxfd > fd_hibus)? maxfd: fd_hibus;
+    maxfd ++;
+
+    while(1)
+    {
+        ret_code = select(maxfd, &rfds, NULL, NULL, NULL);
+
+        if(ret_code == -1)
+        {
+            printf("Select function for template error!\n");
+        }
+        else if(ret_code > 0)
+        {
+            if(fd_timer != -1 && FD_ISSET(fd_timer, &rfds))
+            {
+                read(fd_timer, &exp, sizeof(uint64_t));
+                hibus_fire_event(hibus_context, EVENT_WIFI_SIGNAL, "");
+            }
+            else if(fd_hibus != -1 && FD_ISSET(fd_hibus, &rfds))
+            {
+                ret_code = hibus_wait_and_dispatch_packet(hibus_context, 1000);
+                printf("hibus_wait_and_dispatch_packet return code is %d\n", ret_code);
+            }
+        }
+        else            // timeout
+        {
+        }
+
+        FD_ZERO(&rfds);
+        FD_SET(fd_timer, &rfds);
+        maxfd = fd_timer;
+        FD_SET(fd_hibus, &rfds);
+        maxfd = (maxfd > fd_hibus)? maxfd: fd_hibus;
+        maxfd ++;
+    }
 
     // step 7: free the resource
     hibus_revoke_event(hibus_context, EVENT_WIFI_SIGNAL);

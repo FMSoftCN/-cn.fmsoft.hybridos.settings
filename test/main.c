@@ -30,12 +30,12 @@
 
 static void wifi_signal_handler(hibus_conn* conn, const char* from_endpoint, const char* bubble_name, const char* bubble_data)
 {
-    printf("====== get signal\n");
+    printf("================================================================================================================================== get signal\n");
 }
 
 static int wifi_scan_handler(hibus_conn* conn, const char* from_endpoint, const char* method_name, int ret_code, const char* ret_value)
 {
-    printf("====== get scan result\n");
+    printf("============================================================================================================================== get scan result\n");
     return 0;
 }
 
