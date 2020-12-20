@@ -2,7 +2,7 @@
 #define __INETD__H__
 
 
-#define MAX_DEVICE_NUM      1
+#define MAX_DEVICE_NUM      20
 #define WORKING_DIRECTORY   "/home/gengyue"
 #define INETD_CONFIG_FILE   "inetd.cfg"
 

@@ -39,7 +39,7 @@ printf("========================================================================
     return ret_code;
 }
 
-void * start_wifi(void * args)
+void * start_function(void * args)
 {
     // for hibus
     int fd_hibus = -1;                      // socket for communication with hibus

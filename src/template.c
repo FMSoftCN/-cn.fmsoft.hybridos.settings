@@ -39,7 +39,7 @@ static char * scan_template_handler(hibus_conn* conn, const char* from_endpoint,
     return "{\"hello world\":9000}";
 }
 
-void * start_template(void * args)
+void * start_function(void * args)
 {
     // for hibus
     int fd_hibus = -1;                      // socket for communication with hibus
@@ -70,7 +70,7 @@ void * start_template(void * args)
     fd_hibus = hibus_connect_via_unix_socket(SOCKET_PATH, APP_INETD_NAME, RUNNER_TEMPLATE_NAME, &hibus_context);
     if(fd_hibus <= 0)
     {
-        printf("WIFI DAEMON: connect to HIBUS server error!\n");
+        printf("TEMPLATE DAEMON: connect to HIBUS server error!\n");
         return NULL;
     }
 
