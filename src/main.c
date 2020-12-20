@@ -1,4 +1,4 @@
-#include <errno.h>
+/*#include <errno.h>
 #include <fcntl.h>
 #include <math.h>
 #include <pthread.h>
@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 #include <netinet/in.h>
 #include <sys/ioctl.h>
 #include <sys/select.h>
@@ -24,21 +23,29 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+*/
+
+#include <unistd.h>
+#include <minigui/common.h>
+#include <minigui/minigui.h>
 #include <hibus.h>
 
-#include "../include/inetd.h"
+#include "inetd.h"
 
 #undef  DAEMON
 //#define DAEMON
 
-extern void * start_wifi(void * args);
+//extern void * start_wifi(void * args);
 
 int main(void)
 {
-    int ret = 0;
-    int i = 0;
-    pthread_attr_t thread_attr_start[MAX_DEVICE_NUM];
-    pthread_t a_thread_start[MAX_DEVICE_NUM];
+    char* etc_value = NULL;
+    char library_path[MAX_PATH];
+    char config_path[MAX_PATH];
+//    int ret = 0;
+//    int i = 0;
+//    pthread_attr_t thread_attr_start[MAX_DEVICE_NUM];
+//    pthread_t a_thread_start[MAX_DEVICE_NUM];
 
 #ifdef	DAEMON
     int pid = 0;
@@ -63,6 +70,28 @@ int main(void)
     umask(0);					// reset mask
 #endif
 
+    memset(config_path, 0, MAX_PATH);
+    memset(library_path, 0, MAX_PATH);
+
+    if ((etc_value = getenv ("INETD_CFG_PATH")))
+    {
+        int len = strlen(etc_value);
+        if (etc_value[len-1] == '/')
+            sprintf(config_path, "%s%s", etc_value, INETD_CONFIG_FILE);
+        else
+            sprintf(config_path, "%s/%s", etc_value, INETD_CONFIG_FILE);
+    }
+    else
+        sprintf(config_path, "%s", INETD_CONFIG_FILE);
+
+    if(GetValueFromEtcFile(config_path, "system", "library_path", library_path, ETC_MAXLINE) == ETC_OK)
+    {
+        printf("%s\n", library_path);
+    }
+
+
+
+/*
     // start thread according to the configuration file
     for(i = 0; i < MAX_DEVICE_NUM; i++)
     {
@@ -92,7 +121,7 @@ int main(void)
             (void)pthread_attr_destroy(&thread_attr_start[i]);
         }
     }
-
+*/
     while(1)
     {
         sleep(10);

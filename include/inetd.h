@@ -4,8 +4,8 @@
 
 #define MAX_DEVICE_NUM      1
 #define WORKING_DIRECTORY   "/home/gengyue"
+#define INETD_CONFIG_FILE   "inetd.cfg"
 
-#define LOCALHOST           "localhost"
 #define APP_INETD_NAME      "cn.fmsoft.hybridos.inetd"
 #define SOCKET_PATH         "/var/tmp/hibus.sock"
 
