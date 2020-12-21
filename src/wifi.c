@@ -65,7 +65,7 @@ void * start_function(void * args)
     fd_hibus = hibus_connect_via_unix_socket(SOCKET_PATH, APP_INETD_NAME, RUNNER_WIFI_NAME, &hibus_context);
     if(fd_hibus <= 0)
     {
-        printf("WIFI DAEMON: connect to HIBUS server error!\n");
+        fprintf(stderr, "WIFI DAEMON: connect to HIBUS server error!\n");
         return NULL;
     }
 
@@ -74,7 +74,7 @@ void * start_function(void * args)
     ret_code = hibus_register_procedure(hibus_context, METHOD_WIFI_SCAN, NULL, NULL, scan_wifi_handler);
     if(ret_code)
     {
-        printf("Error for hibus_register_procedure, return code is %d\n", ret_code);
+        fprintf(stderr, "WIFI DAEMON: Error for hibus_register_procedure, return code is %d\n", ret_code);
         exit(1);
     }
 
@@ -87,7 +87,7 @@ void * start_function(void * args)
     // set timer
     if(clock_gettime(CLOCK_REALTIME, &now) == -1)
     {
-        printf("Get now time for template error!\n");
+        fprintf(stderr, "WIFI DAEMON: Get now time for template error!\n");
         return NULL;
     }
 
@@ -103,14 +103,14 @@ void * start_function(void * args)
     fd_timer = timerfd_create(CLOCK_REALTIME, 0);
     if(fd_timer == -1)
     {
-        printf("Create timer for template error!\n");
+        fprintf(stderr, "WIFI DAEMON: Create timer error!\n");
         return NULL;
     }
 
     // set timer
     if(timerfd_settime(fd_timer, TFD_TIMER_ABSTIME, &new_value, NULL) == -1)
     {
-        printf("Set timer for template error!\n");
+        fprintf(stderr, "WIFI DAEMON: Set timer error!\n");
         return NULL;
     }
 
@@ -127,7 +127,7 @@ void * start_function(void * args)
 
         if(ret_code == -1)
         {
-            printf("Select function for template error!\n");
+            fprintf(stderr, "WIFI DAEMON: Select function error!\n");
         }
         else if(ret_code > 0)
         {
@@ -139,7 +139,7 @@ void * start_function(void * args)
             else if(fd_hibus != -1 && FD_ISSET(fd_hibus, &rfds))
             {
                 ret_code = hibus_wait_and_dispatch_packet(hibus_context, 1000);
-                printf("hibus_wait_and_dispatch_packet return code is %d\n", ret_code);
+                fprintf(stderr, "WIFI DAEMON: hibus_wait_and_dispatch_packet return code is %d\n", ret_code);
             }
         }
         else            // timeout
