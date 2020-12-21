@@ -65,7 +65,7 @@ void * start_function(void * args)
     fd_hibus = hibus_connect_via_unix_socket(SOCKET_PATH, APP_INETD_NAME, RUNNER_WIFI_NAME, &hibus_context);
     if(fd_hibus <= 0)
     {
-        fprintf(stderr, "WIFI DAEMON: connect to HIBUS server error, %s.\n", hibus_get_err_message(fd_hibus));
+        fprintf(stderr, "======================================= WIFI DAEMON: connect to HIBUS server error, %s.\n", hibus_get_err_message(fd_hibus));
         return NULL;
     }
 
@@ -74,7 +74,7 @@ void * start_function(void * args)
     ret_code = hibus_register_procedure(hibus_context, METHOD_WIFI_SCAN, NULL, NULL, scan_wifi_handler);
     if(ret_code)
     {
-        fprintf(stderr, "WIFI DAEMON: Error for hibus_register_procedure, %s.\n", hibus_get_err_message(ret_code));
+        fprintf(stderr, "======================================= WIFI DAEMON: Error for hibus_register_procedure, %s.\n", hibus_get_err_message(ret_code));
         exit(1);
     }
 
@@ -83,7 +83,7 @@ void * start_function(void * args)
     ret_code = hibus_register_event(hibus_context, EVENT_WIFI_SIGNAL, NULL, NULL);
     if(ret_code)
     {
-        fprintf(stderr, "WIFI DAEMON: Error for hibus_register_event, %s.\n", hibus_get_err_message(ret_code));
+        fprintf(stderr, "======================================= WIFI DAEMON: Error for hibus_register_event, %s.\n", hibus_get_err_message(ret_code));
         exit(1);
     }
 
@@ -141,13 +141,13 @@ void * start_function(void * args)
                 read(fd_timer, &exp, sizeof(uint64_t));
                 ret_code = hibus_fire_event(hibus_context, EVENT_WIFI_SIGNAL, "");
                 if(ret_code)
-                    fprintf(stderr, "WIFI DAEMON: Error for hibus_fire_event, %s.\n", hibus_get_err_message(ret_code));
+                    fprintf(stderr, "======================================= WIFI DAEMON: Error for hibus_fire_event, %s.\n", hibus_get_err_message(ret_code));
             }
             else if(fd_hibus != -1 && FD_ISSET(fd_hibus, &rfds))
             {
                 ret_code = hibus_wait_and_dispatch_packet(hibus_context, 1000);
                 if(ret_code)
-                    fprintf(stderr, "WIFI DAEMON: Error for hibus_wait_and_dispatch_packet, %s.\n", hibus_get_err_message(ret_code));
+                    fprintf(stderr, "======================================= WIFI DAEMON: Error for hibus_wait_and_dispatch_packet, %s.\n", hibus_get_err_message(ret_code));
             }
         }
         else            // timeout
