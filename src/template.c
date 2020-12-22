@@ -67,12 +67,14 @@ void * start_function(void * args)
 
 
     // step 3: connect to hibus server
+printf("===================================================== template connect\n");
     fd_hibus = hibus_connect_via_unix_socket(SOCKET_PATH, APP_INETD_NAME, RUNNER_TEMPLATE_NAME, &hibus_context);
     if(fd_hibus <= 0)
     {
         fprintf(stderr, "======================================= TEMPLATE DAEMON: connect to HIBUS server error, %s.\n", hibus_get_err_message(fd_hibus));
         return NULL;
     }
+printf("===================================================== template connect ok\n");
 
     // step 4: register remote invocation
     ret_code = hibus_register_procedure(hibus_context, METHOD_TEMPLATE_SCAN, NULL, NULL, scan_template_handler);
