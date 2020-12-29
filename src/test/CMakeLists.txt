@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.10)
+project(test-hibus)
+add_executable(test-hibus main.c)
+include_directories(${MINIGUI_INCLUDE_DIRS} ${PROJECT_INCLUDE_DIRS})
+target_link_libraries(test-hibus ${MINIGUI_LIBRARIES} hibus)
