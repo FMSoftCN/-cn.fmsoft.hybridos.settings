@@ -17,7 +17,51 @@
 #undef  DAEMON
 //#define DAEMON
 
-//extern void * start_wifi(void * args);
+typedef struct _wifi_user_data
+{
+    int a;
+} wifi_user_data;
+
+char * openDevice(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
+{
+    return NULL;
+}
+
+
+char * closeDevice(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
+{
+    return NULL;
+}
+
+char * getNetworkDevicesStatus(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
+{
+    return NULL;
+}
+
+char * wifiStartScanHotspots(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
+{
+    return NULL;
+}
+
+char * wifiStopScanHotspots(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
+{
+    return NULL;
+}
+
+char * wifiConnect(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
+{
+    return NULL;
+}
+
+char * wifiDisconnect(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
+{
+    return NULL;
+}
+
+char * wifiGetNetworkInfo(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
+{
+    return NULL;
+}
 
 int main(void)
 {
@@ -30,11 +74,8 @@ int main(void)
     int ret = 0;
     void * library_handle = NULL;               // handle of loaded library
 	char * library_error = NULL;                // the error message during loading
-    HibusInvokeOps * hibusOps;                  // procedure invocation structure.
-
-
-    // for device
-    int fd_device = -1;                         // device fd
+    hiWiFiDeviceOps * wifi_device_Ops;          // procedure invocation structure.
+    wifi_context * context = NULL;
 
     // for hibus
     int fd_hibus = -1;                          // socket for communication with hibus
@@ -51,7 +92,7 @@ int main(void)
     fd_set rfds;
     int maxfd = 0;
 
-	HibusInvokeOps * (* wifi_ops_get)(hibus_conn *);     // get all invoke functions 
+	hiWiFiDeviceOps * (* __wifi_device_ops_get)(void);   // get all invoke functions 
 
 #ifdef	DAEMON
     int pid = 0;
@@ -137,77 +178,99 @@ int main(void)
 
 
     // step 5: get functions collecition from library 
-    wifi_ops_get = (HibusInvokeOps * (*) (hibus_conn *))dlsym(library_handle, "wifi_ops_get");
+    __wifi_device_ops_get = (hiWiFiDeviceOps * (*) (void))dlsym(library_handle, "__wifi_device_ops_get");
     if((library_error = dlerror()) != NULL)
     {
         fprintf (stderr, "get wifi_init pointer error: %s\n", library_error);
         exit(1);
     }
-    hibusOps = wifi_ops_get(hibus_context);
+    wifi_device_Ops = __wifi_device_ops_get();
 
     // step 6: register remote invocation
-    ret_code = hibus_register_procedure(hibus_context, METHOD_WIFI_SCAN, NULL, NULL, hibusOps->wifi_scan_handler);
+    ret_code = hibus_register_procedure(hibus_context, METHOD_WIFI_OPEN_DEVICE, NULL, NULL, openDevice);
     if(ret_code)
     {
-        fprintf(stderr, "======================================= WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_SCAN, hibus_get_err_message(ret_code));
+        fprintf(stderr, "======================================= WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_OPEN_DEVICE, hibus_get_err_message(ret_code));
         exit(1);
     }
 
-    ret_code = hibus_register_procedure(hibus_context, METHOD_WIFI_CONNECT, NULL, NULL, hibusOps->wifi_connect_handler);
+    ret_code = hibus_register_procedure(hibus_context, METHOD_WIFI_CLOSE_DEVICE, NULL, NULL, closeDevice);
     if(ret_code)
     {
-        fprintf(stderr, "======================================= WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_CONNECT, hibus_get_err_message(ret_code));
+        fprintf(stderr, "======================================= WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_CLOSE_DEVICE, hibus_get_err_message(ret_code));
         exit(1);
     }
 
-    ret_code = hibus_register_procedure(hibus_context, METHOD_WIFI_DISCONN, NULL, NULL, hibusOps->wifi_disconnect_handler);
+    ret_code = hibus_register_procedure(hibus_context, METHOD_WIFI_GET_DEVICES_STATUS, NULL, NULL, getNetworkDevicesStatus);
     if(ret_code)
     {
-        fprintf(stderr, "======================================= WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_DISCONN, hibus_get_err_message(ret_code));
+        fprintf(stderr, "======================================= WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_GET_DEVICES_STATUS, hibus_get_err_message(ret_code));
+        exit(1);
+    }
+
+    ret_code = hibus_register_procedure(hibus_context, METHOD_WIFI_START_SCAN, NULL, NULL, wifiStartScanHotspots);
+    if(ret_code)
+    {
+        fprintf(stderr, "======================================= WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_START_SCAN, hibus_get_err_message(ret_code));
+        exit(1);
+    }
+
+    ret_code = hibus_register_procedure(hibus_context, METHOD_WIFI_STOP_SCAN, NULL, NULL, wifiStopScanHotspots);
+    if(ret_code)
+    {
+        fprintf(stderr, "======================================= WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_STOP_SCAN, hibus_get_err_message(ret_code));
+        exit(1);
+    }
+
+    ret_code = hibus_register_procedure(hibus_context, METHOD_WIFI_CONNECT_AP, NULL, NULL, wifiConnect);
+    if(ret_code)
+    {
+        fprintf(stderr, "======================================= WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_CONNECT_AP, hibus_get_err_message(ret_code));
+        exit(1);
+    }
+
+    ret_code = hibus_register_procedure(hibus_context, METHOD_WIFI_DISCONNECT_AP, NULL, NULL, wifiDisconnect);
+    if(ret_code)
+    {
+        fprintf(stderr, "======================================= WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_DISCONNECT_AP, hibus_get_err_message(ret_code));
+        exit(1);
+    }
+
+    ret_code = hibus_register_procedure(hibus_context, METHOD_WIFI_GET_NETWORK_INFO, NULL, NULL, wifiGetNetworkInfo);
+    if(ret_code)
+    {
+        fprintf(stderr, "======================================= WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_GET_NETWORK_INFO, hibus_get_err_message(ret_code));
         exit(1);
     }
 
     // step 7: register an event
-    ret_code = hibus_register_event(hibus_context, EVENT_WIFI_SIGNAL, NULL, NULL);
+    ret_code = hibus_register_event(hibus_context, NETWORKDEVICECHANGED, NULL, NULL);
     if(ret_code)
     {
-        fprintf(stderr, "======================================= WIFI DAEMON: Error for register event %s, %s.\n", EVENT_WIFI_SIGNAL, hibus_get_err_message(ret_code));
+        fprintf(stderr, "======================================= WIFI DAEMON: Error for register event %s, %s.\n", NETWORKDEVICECHANGED, hibus_get_err_message(ret_code));
         exit(1);
     }
 
-    ret_code = hibus_register_event(hibus_context, EVENT_WIFI_SCAN, NULL, NULL);
+    ret_code = hibus_register_event(hibus_context, WIFINEWHOTSPOTS, NULL, NULL);
     if(ret_code)
     {
-        fprintf(stderr, "======================================= WIFI DAEMON: Error for register event %s, %s.\n", EVENT_WIFI_SCAN, hibus_get_err_message(ret_code));
+        fprintf(stderr, "======================================= WIFI DAEMON: Error for register event %s, %s.\n", WIFINEWHOTSPOTS, hibus_get_err_message(ret_code));
         exit(1);
     }
 
-    ret_code = hibus_register_event(hibus_context, EVENT_WIFI_CONNECT, NULL, NULL);
+    ret_code = hibus_register_event(hibus_context, WIFISIGNALSTRENGTHCHANGED, NULL, NULL);
     if(ret_code)
     {
-        fprintf(stderr, "======================================= WIFI DAEMON: Error for register event %s, %s.\n", EVENT_WIFI_CONNECT, hibus_get_err_message(ret_code));
-        exit(1);
-    }
-
-    ret_code = hibus_register_event(hibus_context, EVENT_WIFI_BROKEN, NULL, NULL);
-    if(ret_code)
-    {
-        fprintf(stderr, "======================================= WIFI DAEMON: Error for register event %s, %s.\n", EVENT_WIFI_BROKEN, hibus_get_err_message(ret_code));
-        exit(1);
-    }
-
-    ret_code = hibus_register_event(hibus_context, EVENT_WIFI_RESUME, NULL, NULL);
-    if(ret_code)
-    {
-        fprintf(stderr, "======================================= WIFI DAEMON: error for register event %s, %s.\n", EVENT_WIFI_RESUME, hibus_get_err_message(ret_code));
+        fprintf(stderr, "======================================= WIFI DAEMON: Error for register event %s, %s.\n", WIFISIGNALSTRENGTHCHANGED, hibus_get_err_message(ret_code));
         exit(1);
     }
 
     // step 8: initialize device
-    ret_code = hibusOps->open_device(&fd_device);
+    ret_code = 0;
+    ret_code = wifi_device_Ops->open("abcd", &context);
     if(ret_code)
     {
-        fprintf(stderr, "======================================= WIFI DAEMON: error for open device.\n");
+        fprintf(stderr, "======================================= WIFI DAEMON: error for open device. %d.\n", ret_code);
         exit(1);
     }
 
@@ -247,11 +310,6 @@ int main(void)
     maxfd = fd_timer;
     FD_SET(fd_hibus, &rfds);
     maxfd = (maxfd > fd_hibus)? maxfd: fd_hibus;
-    if(fd_device != -1)
-    {
-        FD_SET(fd_device, &rfds);
-        maxfd = (maxfd > fd_device)? maxfd: fd_device;
-    }
     maxfd ++;
 
     while(1)
@@ -267,18 +325,14 @@ int main(void)
             if(fd_timer != -1 && FD_ISSET(fd_timer, &rfds))
             {
                 read(fd_timer, &exp, sizeof(uint64_t));
-                hibusOps->wifi_scan();
-                hibusOps->wifi_signal();
+                wifi_device_Ops->start_scan(context);
+                wifi_device_Ops->get_signal_strength(context);
             }
             else if(fd_hibus != -1 && FD_ISSET(fd_hibus, &rfds))
             {
                 ret_code = hibus_wait_and_dispatch_packet(hibus_context, 1000);
                 if(ret_code)
                     fprintf(stderr, "======================================= WIFI DAEMON: Error for hibus_wait_and_dispatch_packet, %s.\n", hibus_get_err_message(ret_code));
-            }
-            else if(fd_device != -1 && FD_ISSET(fd_device, &rfds))
-            {
-                hibusOps->device_read();
             }
         }
         else            // timeout
@@ -290,28 +344,26 @@ int main(void)
         maxfd = fd_timer;
         FD_SET(fd_hibus, &rfds);
         maxfd = (maxfd > fd_hibus)? maxfd: fd_hibus;
-        if(fd_device != -1)
-        {
-            FD_SET(fd_device, &rfds);
-            maxfd = (maxfd > fd_device)? maxfd: fd_device;
-        }
         maxfd ++;
     }
 
     // step 8: free the resource
-    hibus_revoke_event(hibus_context, EVENT_WIFI_SIGNAL);
-    hibus_revoke_event(hibus_context, EVENT_WIFI_SCAN);
-    hibus_revoke_event(hibus_context, EVENT_WIFI_CONNECT);
-    hibus_revoke_event(hibus_context, EVENT_WIFI_BROKEN);
-    hibus_revoke_event(hibus_context, EVENT_WIFI_RESUME);
+    hibus_revoke_event(hibus_context, WIFISIGNALSTRENGTHCHANGED);
+    hibus_revoke_event(hibus_context, WIFINEWHOTSPOTS);
+    hibus_revoke_event(hibus_context, NETWORKDEVICECHANGED);
 
-    hibus_revoke_procedure(hibus_context, METHOD_WIFI_SCAN);
-    hibus_revoke_procedure(hibus_context, METHOD_WIFI_CONNECT);
-    hibus_revoke_procedure(hibus_context, METHOD_WIFI_DISCONN);
+    hibus_revoke_procedure(hibus_context, METHOD_WIFI_OPEN_DEVICE);
+    hibus_revoke_procedure(hibus_context, METHOD_WIFI_CLOSE_DEVICE);
+    hibus_revoke_procedure(hibus_context, METHOD_WIFI_GET_DEVICES_STATUS);
+    hibus_revoke_procedure(hibus_context, METHOD_WIFI_START_SCAN);
+    hibus_revoke_procedure(hibus_context, METHOD_WIFI_STOP_SCAN);
+    hibus_revoke_procedure(hibus_context, METHOD_WIFI_CONNECT_AP);
+    hibus_revoke_procedure(hibus_context, METHOD_WIFI_DISCONNECT_AP);
+    hibus_revoke_procedure(hibus_context, METHOD_WIFI_GET_NETWORK_INFO);
 
     hibus_disconnect(hibus_context);
 
-    hibusOps->close_device(fd_device);
+    wifi_device_Ops->close(context);
 
     if(library_handle)
     {
