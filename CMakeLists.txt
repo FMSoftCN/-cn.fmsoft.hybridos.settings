@@ -14,7 +14,6 @@ set(PROJECT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/include)
 
 # copy the necessary resource files to /bin/res
 file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
-file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
 
 # set output path
