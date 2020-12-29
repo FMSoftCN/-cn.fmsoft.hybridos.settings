@@ -28,7 +28,6 @@
 #include <hibus.h>
 
 #include "../include/inetd.h"
-//#include "../include/hibus_wifi.h"
 
 static hibus_conn * hibus = NULL;
 static HibusInvokeOps hibusOps;

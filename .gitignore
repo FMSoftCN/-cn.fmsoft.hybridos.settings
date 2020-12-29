@@ -58,7 +58,6 @@ dkms.conf
 *.pyc
 
 # ignore files, created with make-all-linux-project script
-/lib
 /bin
 
 # Cmake files
