@@ -57,10 +57,10 @@ int main(void)
 
 
     endpoint = hibus_assemble_endpoint_name_alloc(HIBUS_LOCALHOST, APP_INETD_NAME, RUNNER_WIFI_NAME);
-    //hibus_call_procedure_and_wait(hibus_context, endpoint, METHOD_WIFI_SCAN, "{\"abcd\":1234}", 1000, &ret_code, &ret_value);
-    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_SCAN, "{\"abcd\":1234}", 1000, wifi_scan_handler);
+    //hibus_call_procedure_and_wait(hibus_context, endpoint, METHOD_WIFI_START_SCAN, "{\"abcd\":1234}", 1000, &ret_code, &ret_value);
+    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_START_SCAN, "{\"abcd\":1234}", 1000, wifi_scan_handler);
     ret_code ++;
-    hibus_subscribe_event(hibus_context, endpoint, EVENT_WIFI_SIGNAL, wifi_signal_handler);
+    hibus_subscribe_event(hibus_context, endpoint, WIFISIGNALSTRENGTHCHANGED, wifi_signal_handler);
 
     while(1) 
     { 

@@ -267,12 +267,17 @@ int main(void)
 
     // step 8: initialize device
     ret_code = 0;
-    ret_code = wifi_device_Ops->open("abcd", &context);
+    ret_code = wifi_device_Ops->open(NULL, &context);
     if(ret_code)
     {
         fprintf(stderr, "======================================= WIFI DAEMON: error for open device. %d.\n", ret_code);
         exit(1);
     }
+
+        fprintf(stderr, "======================================= WIFI DAEMON: start scan. %d.\n", ret_code);
+    wifi_device_Ops->start_scan(context);
+        fprintf(stderr, "======================================= WIFI DAEMON: end scan. %d.\n", ret_code);
+    wifi_device_Ops->get_hotspots(context, NULL);
 
     // step 9: check device status periodically
     // set timer

@@ -1,24 +1,16 @@
+#define TAG "wifi"
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
 #include <wifi_intf.h>
 #include <pthread.h>
 #include <sys/types.h>
 #include <dirent.h>
-#include <hibus.h>
-
-#include "inetd.h"
 
 #define CONFIG_CTRL_IFACE_DIR "/var/run/wpa_supplicant"
-typedef struct _wifi_context
-{
-    aw_wifi_interface_t * p_wifi_interface;
-    int event_label;
-} wifi_context;
-
-static hiWiFiDeviceOps wifiOps;
 
 static const char *ctrl_iface_dir = CONFIG_CTRL_IFACE_DIR;
 static int event = WIFIMG_NETWORK_DISCONNECTED;
@@ -158,7 +150,6 @@ static char * get_default_ifname(void)
     return ifname;
 }
 
-#ifdef gengyue
 int main(int argv, char *argc[])
 {
     int ret = 0;
@@ -181,6 +172,7 @@ int main(int argv, char *argc[])
 
     // connect to WiFi device
     event_label = rand();
+    printf("============================== event_label 0x%x\n", event_label);
     p_wifi_interface = aw_wifi_on(wifi_event_handle, event_label, results);
     if(p_wifi_interface == NULL)
     {
@@ -218,6 +210,7 @@ int main(int argv, char *argc[])
 
     }
 
+
     len = 4096;
     ret = p_wifi_interface->get_scan_results(results, &len);
 
@@ -235,129 +228,4 @@ int main(int argv, char *argc[])
     }
 
     return 0;
-}
-#endif
-
-
-int open_device(const char * device_name, wifi_context ** context)
-{
-    wifi_context * con = NULL;
-    char * ctrl_ifname = NULL;
-    char results[4096];
-
-    memset(results, 0, 4096);
-    if(device_name == NULL)
-    {
-        ctrl_ifname = get_default_ifname();
-        if(ctrl_ifname)
-        {
-            sprintf(results, "%s/%s", ctrl_iface_dir, ctrl_ifname);
-            free(ctrl_ifname);
-        }
-        else
-        {
-            * context = NULL;
-            return ENODEV;
-        }
-    }
-    else
-        sprintf(results, "%s/%s", ctrl_iface_dir, device_name);
-
-    con = malloc(sizeof(wifi_context));
-    memset(con, 0, sizeof(wifi_context));
-    * context = con;
-
-    con->event_label = rand();
-    con->p_wifi_interface = aw_wifi_on(wifi_event_handle, con->event_label, results);
-    if(con->p_wifi_interface == NULL)
-    {
-        free(con);
-        * context = NULL;
-        return ENODEV;
-    }
-
-    while(aw_wifi_get_wifi_state() == WIFIMG_WIFI_BUSING)
-    {
-        printf("wifi state busing,waiting\n");
-        usleep(2000000);
-    }
-
-    return 0;
-}
-
-int close_device(wifi_context * context)
-{
-    int ret_code = 0;
-    ret_code = aw_wifi_off(aw_wifi_off(context->p_wifi_interface));
-    if(ret_code)
-        return ENODEV;
-
-    if(context)
-        free(context);
-    return 0;
-}
-
-int connect(wifi_context * context, const char * ssid, const char *password)
-{
-    int ret_code = 0;
-printf("======================================================= wifi: connect.\n");
-    return ret_code;
-}
-
-int disconnect(wifi_context * context)
-{
-    int ret_code = 0;
-printf("======================================================= wifi: disconnect.\n");
-    return ret_code;
-}
-
-int get_signal_strength(wifi_context * context)
-{
-    int ret_code = 0;
-printf("======================================================= wifi: get_signal_strength.\n");
-    return ret_code;
-}
-
-int start_scan(wifi_context * context)
-{
-    int ret_code = 0;
-
-    context->event_label++;
-    ret_code = context->p_wifi_interface->start_scan(context->event_label);
-    return ret_code;
-}
-
-int stop_scan(wifi_context * context)
-{
-    int ret_code = 0;
-    return ret_code;
-}
-
-unsigned int get_hotspots(wifi_context * context, wifi_hotspot ** hotspots)
-{
-    unsigned int ret_code = 0;
-    int len = 4096;
-    char results[4096];
-
-    memset(results, 0, 4096);
-    ret_code = context->p_wifi_interface->get_scan_results(results, &len);
-    printf("%s\n", results);
-    return ret_code;
-}
-
-
-// initialize device.
-hiWiFiDeviceOps * __wifi_device_ops_get(void)
-{
-    // initialize wifiOps 
-    wifiOps.open = open_device;
-    wifiOps.close = close_device;
-    wifiOps.connect = connect;
-    wifiOps.disconnect = disconnect;
-    wifiOps.get_signal_strength = get_signal_strength;
-    wifiOps.stop_scan = stop_scan;
-    wifiOps.start_scan = start_scan;
-    wifiOps.get_hotspots = get_hotspots;
-
-    return &wifiOps;
 }

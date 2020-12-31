@@ -10,7 +10,7 @@ set(MINIGUI_LIBRARIES ${MiniGUI_LIBRARIES})
 set(MINIGUI_INCLUDE_DIRS ${MiniGUI_INCLUDE_DIRS})
 set(PROJECT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/include)
 
-#link_directories("${PROJECT_SOURCE_DIR}/../Output/HBD/Root/lib")
+link_directories("${PROJECT_SOURCE_DIR}/lib")
 
 # copy the necessary resource files to /bin/res
 file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)

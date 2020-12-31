@@ -1,0 +1,2 @@
+export LD_LIBRARY_PATH=../../lib:$LD_LIBRARY_PATH
+gcc wifi_list_networks.c -I../src/include -lwifimanager -L../../lib -lpthread -lwpa_client
