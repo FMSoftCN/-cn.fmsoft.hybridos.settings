@@ -25,6 +25,7 @@
 #include "wifi.h"
 #include "mobile.h"
 #include "ethernet.h"
+#include "common.h"
 
 #undef  DAEMON
 //#define DAEMON
@@ -462,6 +463,7 @@ int main(void)
     }
 
     // step 4: register remote invocation
+    common_register(hibus_context_inetd);
     wifi_register(hibus_context_inetd);
     ethernet_register(hibus_context_inetd);
     mobile_register(hibus_context_inetd);
@@ -480,6 +482,8 @@ int main(void)
     mobile_revoke(hibus_context_inetd);
     ethernet_revoke(hibus_context_inetd);
     wifi_revoke(hibus_context_inetd);
+    common_revoke(hibus_context_inetd);
+
     hibus_disconnect(hibus_context_inetd);
 
     for(int i = 0; i < device_num; i++)

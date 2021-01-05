@@ -2,8 +2,8 @@
 #define __INETD__H__
 
 // only for develop
-#define INETD_CONFIG_FILE   "/home/projects/hibusdaemon/bin/inetd.cfg"
-#define INETD_LIBRARY_PATH  "/home/projects/hibusdaemon/lib"
+#define INETD_CONFIG_FILE   "/home/projects/inetd/bin/inetd.cfg"
+#define INETD_LIBRARY_PATH  "/home/projects/inetd/lib"
 
 // ================ For WiFi <<<<  =========================================================
 struct _wifi_context;
@@ -91,10 +91,11 @@ typedef struct _hiWiFiDeviceOps
 #define ERR_WRONG_JSON                  -3
 #define ERR_NO_DEVICE_NAME_IN_PARAM     -4
 #define ERR_NO_DEVICE_IN_SYSTEM         -5
-#define ERR_NOT_WIFI_DEVICE             -6
+#define ERR_INVALID_DEVICE              -6
 #define ERR_NO_OPERATION_LIST           -7
-#define ERR_OPEN_WIFI_DEVICE            -8
-#define ERR_CLOSE_WIFI_DEVICE           -9
+#define ERR_NOT_WIFI_DEVICE             -8
+#define ERR_OPEN_WIFI_DEVICE            -9
+#define ERR_CLOSE_WIFI_DEVICE           -10
 
 
 
