@@ -24,11 +24,11 @@
 #include "inetd.h"
 #include "ethernet.h"
 
-void ethernet_register(hibus_conn * hibus_context_ethernet)
+void ethernet_register(hibus_conn * hibus_context_inetd)
 {
 }
 
-void ethernet_revoke(hibus_conn * hibus_context_ethernet)
+void ethernet_revoke(hibus_conn * hibus_context_inetd)
 {
 }
 

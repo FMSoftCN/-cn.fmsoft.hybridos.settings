@@ -14,7 +14,7 @@
 #define CONFIG_CTRL_IFACE_DIR "/var/run/wpa_supplicant"
 typedef struct _wifi_context
 {
-    aw_wifi_interface_t * p_wifi_interface;
+    const aw_wifi_interface_t * p_wifi_interface;
     int event_label;
 } wifi_context;
 
@@ -243,9 +243,9 @@ int open_device(const char * device_name, wifi_context ** context)
 {
     wifi_context * con = NULL;
     char * ctrl_ifname = NULL;
-    char results[4096];
+    char results[256];
 
-    memset(results, 0, 4096);
+    memset(results, 0, 256);
     if(device_name == NULL)
     {
         ctrl_ifname = get_default_ifname();
@@ -257,7 +257,7 @@ int open_device(const char * device_name, wifi_context ** context)
         else
         {
             * context = NULL;
-            return ENODEV;
+            return ERR_OPEN_WIFI_DEVICE;
         }
     }
     else
@@ -273,7 +273,7 @@ int open_device(const char * device_name, wifi_context ** context)
     {
         free(con);
         * context = NULL;
-        return ENODEV;
+        return ERR_OPEN_WIFI_DEVICE;
     }
 
     while(aw_wifi_get_wifi_state() == WIFIMG_WIFI_BUSING)
@@ -282,15 +282,15 @@ int open_device(const char * device_name, wifi_context ** context)
         usleep(2000000);
     }
 
-    return 0;
+    return ERR_NO;
 }
 
 int close_device(wifi_context * context)
 {
     int ret_code = 0;
-    ret_code = aw_wifi_off(aw_wifi_off(context->p_wifi_interface));
+    ret_code = aw_wifi_off(context->p_wifi_interface);
     if(ret_code)
-        return ENODEV;
+        return ERR_CLOSE_WIFI_DEVICE;
 
     if(context)
         free(context);

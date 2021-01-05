@@ -56,7 +56,7 @@ int main(void)
     }
 
 
-    endpoint = hibus_assemble_endpoint_name_alloc(HIBUS_LOCALHOST, APP_INETD_NAME, RUNNER_WIFI_NAME);
+    endpoint = hibus_assemble_endpoint_name_alloc(HIBUS_LOCALHOST, APP_NAME_SETTINGS, RUNNER_NAME_INETD);
     //hibus_call_procedure_and_wait(hibus_context, endpoint, METHOD_WIFI_START_SCAN, "{\"abcd\":1234}", 1000, &ret_code, &ret_value);
     ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_START_SCAN, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
     ret_code ++;

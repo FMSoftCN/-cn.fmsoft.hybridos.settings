@@ -24,11 +24,11 @@
 #include "inetd.h"
 #include "mobile.h"
 
-void mobile_register(hibus_conn * hibus_context_mobile)
+void mobile_register(hibus_conn * hibus_context_inetd)
 {
 }
 
-void mobile_revoke(hibus_conn * hibus_context_mobile)
+void mobile_revoke(hibus_conn * hibus_context_inetd)
 {
 }
 

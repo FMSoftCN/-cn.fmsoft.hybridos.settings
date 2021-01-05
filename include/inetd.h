@@ -59,10 +59,8 @@ typedef struct _hiWiFiDeviceOps
 
 #define WORKING_DIRECTORY               "/home/gengyue"                     // for daemon
 
-#define APP_INETD_NAME                  "cn.fmsoft.hybridos.inetd"
-#define RUNNER_WIFI_NAME                "wifi"
-#define RUNNER_ETHERNET_NAME            "ethernet"
-#define RUNNER_MOBILE_NAME              "mobile"
+#define APP_NAME_SETTINGS               "cn.fmsoft.hybridos.settings"
+#define RUNNER_NAME_INETD               "inetd"
 #define SOCKET_PATH                     "/var/tmp/hibus.sock"
 
 #define MAX_DEVICE_NUM                  10
@@ -85,6 +83,23 @@ typedef struct _hiWiFiDeviceOps
 // for time period
 #define DEFAULT_SCAN_TIME               120
 #define DEFAULT_SIGNAL_TIME             30
+
+// for error
+#define ERR_NO                          0
+#define ERR_NONE_DEVICE_LIST            -1
+#define ERR_WRONG_PROCEDURE             -2
+#define ERR_WRONG_JSON                  -3
+#define ERR_NO_DEVICE_NAME_IN_PARAM     -4
+#define ERR_NO_DEVICE_IN_SYSTEM         -5
+#define ERR_NOT_WIFI_DEVICE             -6
+#define ERR_NO_OPERATION_LIST           -7
+#define ERR_OPEN_WIFI_DEVICE            -8
+#define ERR_CLOSE_WIFI_DEVICE           -9
+
+
+
+
+
 
 typedef struct _WiFi_device
 {

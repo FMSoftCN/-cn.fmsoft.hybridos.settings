@@ -10,7 +10,7 @@ char * wifiConnect(hibus_conn* conn, const char* from_endpoint, const char* to_m
 char * wifiDisconnect(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code);
 char * wifiGetNetworkInfo(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code);
 
-void wifi_register(hibus_conn * hibus_context_wifi);
-void wifi_revoke(hibus_conn * hibus_context_wifi);
+void wifi_register(hibus_conn * hibus_context_inetd);
+void wifi_revoke(hibus_conn * hibus_context_inetd);
 
 #endif  // __INETD_WIFI__

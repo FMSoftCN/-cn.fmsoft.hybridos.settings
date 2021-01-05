@@ -396,18 +396,9 @@ int main(void)
     int device_num = 0;
 
     // for hibus
-    int fd_hibus_wifi = -1;
-    hibus_conn * hibus_context_wifi = NULL;
-    int fd_hibus_ethernet = -1;
-    hibus_conn * hibus_context_ethernet = NULL;
-    int fd_hibus_mobile = -1;
-    hibus_conn * hibus_context_mobile = NULL;
+    int fd_hibus_inetd = -1;
+    hibus_conn * hibus_context_inetd = NULL;
     int ret_code = 0;
-
-    // for select
-    fd_set rfds;
-    int maxfd = 0;
-    struct timeval tm;
 
 #ifdef	DAEMON
     int pid = 0;
@@ -451,150 +442,45 @@ int main(void)
     // step 3: connect to hibus server
     for(int i = 0; i < device_num; i++)
     {
-        if((device[i].type == DEVICE_TYPE_WIFI) && (fd_hibus_wifi == -1))
+        if(((device[i].type == DEVICE_TYPE_WIFI) || (device[i].type == DEVICE_TYPE_ETHERNET) || (device[i].type == DEVICE_TYPE_MOBILE))
+                && (fd_hibus_inetd == -1))
         {
-            fd_hibus_wifi = hibus_connect_via_unix_socket(SOCKET_PATH, APP_INETD_NAME, RUNNER_WIFI_NAME, &hibus_context_wifi);
-            if(fd_hibus_wifi <= 0)
+            fd_hibus_inetd = hibus_connect_via_unix_socket(SOCKET_PATH, APP_NAME_SETTINGS, RUNNER_NAME_INETD, &hibus_context_inetd);
+            if(fd_hibus_inetd <= 0)
             {
-                fprintf(stderr, "WIFI DAEMON: WiFi runner connects to HIBUS server error, %s.\n", hibus_get_err_message(fd_hibus_wifi));
+                fprintf(stderr, "WIFI DAEMON: inetd runner connects to HIBUS server error, %s.\n", hibus_get_err_message(fd_hibus_inetd));
                 exit(1);
             }
-            hibus_conn_set_user_data(hibus_context_wifi, &device);
-            ret_code ++;
-        }
-        else if((device[i].type == DEVICE_TYPE_ETHERNET) && (fd_hibus_ethernet == -1))
-        {
-            fd_hibus_ethernet = hibus_connect_via_unix_socket(SOCKET_PATH, APP_INETD_NAME, RUNNER_ETHERNET_NAME, &hibus_context_ethernet);
-            if(fd_hibus_ethernet <= 0)
-            {
-                fprintf(stderr, "WIFI DAEMON: Ethernet runner connects to HIBUS server error, %s.\n", hibus_get_err_message(fd_hibus_ethernet));
-                exit(1);
-            }
-            hibus_conn_set_user_data(hibus_context_ethernet, &device);
-            ret_code ++;
-        }
-        else if((device[i].type == DEVICE_TYPE_MOBILE) && (fd_hibus_mobile == -1))
-        {
-            fd_hibus_mobile = hibus_connect_via_unix_socket(SOCKET_PATH, APP_INETD_NAME, RUNNER_MOBILE_NAME, &hibus_context_mobile);
-            if(fd_hibus_mobile <= 0)
-            {
-                fprintf(stderr, "WIFI DAEMON: Mobile runner connects to HIBUS server error, %s.\n", hibus_get_err_message(fd_hibus_mobile));
-                exit(1);
-            }
-            hibus_conn_set_user_data(hibus_context_mobile, &device);
-            ret_code ++;
+            hibus_conn_set_user_data(hibus_context_inetd, &device);
+            break;
         }
     }
-    if(ret_code == 0)
+    if(i >= device_num)
     {
         fprintf(stderr, "WIFI DAEMON: No runner connects to HIBUS server.Exit.\n");
         exit(1);
     }
 
     // step 4: register remote invocation
-    if(fd_hibus_wifi != -1)
-        wifi_register(hibus_context_wifi);
-    if(fd_hibus_ethernet != -1)
-        ethernet_register(hibus_context_ethernet);
-    if(fd_hibus_mobile != -1)
-        mobile_register(hibus_context_mobile);
+    wifi_register(hibus_context_inetd);
+    ethernet_register(hibus_context_inetd);
+    mobile_register(hibus_context_inetd);
 
     // step 5: check device status periodically
-    FD_ZERO(&rfds);
-    if(fd_hibus_wifi != -1)
-    {
-        FD_SET(fd_hibus_wifi, &rfds);
-        maxfd = (maxfd > fd_hibus_wifi)? maxfd: fd_hibus_wifi;
-    }
-    if(fd_hibus_ethernet != -1)
-    {
-        FD_SET(fd_hibus_ethernet, &rfds);
-        maxfd = (maxfd > fd_hibus_ethernet)? maxfd: fd_hibus_ethernet;
-    }
-    if(fd_hibus_mobile != -1)
-    {
-        FD_SET(fd_hibus_mobile, &rfds);
-        maxfd = (maxfd > fd_hibus_mobile)? maxfd: fd_hibus_mobile;
-    }
-    maxfd ++;
-
-    tm.tv_sec = 1;
-    tm.tv_usec = 0;
-
     while(1)
     {
-        ret_code = select(maxfd, &rfds, NULL, NULL, &tm);
-
-        if(ret_code == -1)
-        {
-            fprintf(stderr, "WIFI DAEMON: Select function error!\n");
-        }
-        else if(ret_code > 0)
-        {
-            if(fd_hibus_wifi != -1 && FD_ISSET(fd_hibus_wifi, &rfds))
-            {
-                ret_code = hibus_wait_and_dispatch_packet(hibus_context_wifi, 1000);
-                if(ret_code)
-                    fprintf(stderr, "WIFI DAEMON: WiFi error for hibus_wait_and_dispatch_packet, %s.\n", hibus_get_err_message(ret_code));
-            }
-            else if(fd_hibus_ethernet != -1 && FD_ISSET(fd_hibus_ethernet, &rfds))
-            {
-                ret_code = hibus_wait_and_dispatch_packet(hibus_context_ethernet, 1000);
-                if(ret_code)
-                    fprintf(stderr, "WIFI DAEMON: Ethernet error for hibus_wait_and_dispatch_packet, %s.\n", hibus_get_err_message(ret_code));
-            }
-            else if(fd_hibus_mobile != -1 && FD_ISSET(fd_hibus_mobile, &rfds))
-            {
-                ret_code = hibus_wait_and_dispatch_packet(hibus_context_mobile, 1000);
-                if(ret_code)
-                    fprintf(stderr, "WIFI DAEMON: Mobile error for hibus_wait_and_dispatch_packet, %s.\n", hibus_get_err_message(ret_code));
-            }
-        }
-        else
-        {
-            printf("time out\n");
-//                wifi_device_Ops->start_scan(context);
-//                wifi_device_Ops->get_signal_strength(context);
-        }
-
-        FD_ZERO(&rfds);
-        if(fd_hibus_wifi != -1)
-        {
-            FD_SET(fd_hibus_wifi, &rfds);
-            maxfd = (maxfd > fd_hibus_wifi)? maxfd: fd_hibus_wifi;
-        }
-        if(fd_hibus_ethernet != -1)
-        {
-            FD_SET(fd_hibus_ethernet, &rfds);
-            maxfd = (maxfd > fd_hibus_ethernet)? maxfd: fd_hibus_ethernet;
-        }
-        if(fd_hibus_mobile != -1)
-        {
-            FD_SET(fd_hibus_mobile, &rfds);
-            maxfd = (maxfd > fd_hibus_mobile)? maxfd: fd_hibus_mobile;
-        }
-        maxfd ++;
-
-        tm.tv_sec = 1;
-        tm.tv_usec = 0;
+        ret_code = hibus_wait_and_dispatch_packet(hibus_context_inetd, 1000);
+        if(ret_code)
+            fprintf(stderr, "WIFI DAEMON: WiFi error for hibus_wait_and_dispatch_packet, %s.\n", hibus_get_err_message(ret_code));
+//        wifi_device_Ops->start_scan(context);
+//        wifi_device_Ops->get_signal_strength(context);
     }
 
     // step 6: free the resource
-    if(fd_hibus_wifi != -1)
-    {
-        wifi_revoke(hibus_context_wifi);
-        hibus_disconnect(hibus_context_wifi);
-    }
-    if(fd_hibus_ethernet != -1)
-    {
-        ethernet_revoke(hibus_context_ethernet);
-        hibus_disconnect(hibus_context_ethernet);
-    }
-    if(fd_hibus_mobile != -1)
-    {
-        mobile_revoke(hibus_context_mobile);
-        hibus_disconnect(hibus_context_mobile);
-    }
+    mobile_revoke(hibus_context_inetd);
+    ethernet_revoke(hibus_context_inetd);
+    wifi_revoke(hibus_context_inetd);
+    hibus_disconnect(hibus_context_inetd);
 
     for(int i = 0; i < device_num; i++)
     {
