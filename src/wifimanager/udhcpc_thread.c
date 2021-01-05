@@ -88,7 +88,6 @@ void *udhcpc_thread(void *args)
 		set_cur_wifi_event(AP_CONNECTED);
         call_event_callback_function(WIFIMG_NETWORK_CONNECTED, NULL, connecting_ap_event_label);
     }else{
-        printf("udhcpc wlan0 timeout, pid %d!\n",pthread_self());
         /* stop dhcpc thread */
         system("/etc/wifi/udhcpc_wlan0 stop");
 

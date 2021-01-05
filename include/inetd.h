@@ -109,6 +109,7 @@ typedef struct _network_device
     char subnetMask[32];
 } network_device;
 
+int get_device_index(const network_device * device, const char * ifname);
 
 // for test
 #define AGENT_NAME          "cn.fmsoft.hybridos.sysmgr"

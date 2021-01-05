@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(inetd)
 file(COPY "inetd.cfg" DESTINATION ${PROJECT_SOURCE_DIR}/../../bin/)
-add_executable(inetd main.c)
+add_executable(inetd main.c wifi.c ethernet.c mobile.c)
 include_directories(${MINIGUI_INCLUDE_DIRS} ${PROJECT_INCLUDE_DIRS})
-target_link_libraries(inetd ${MINIGUI_LIBRARIES} hibus)
+target_link_libraries(inetd ${MINIGUI_LIBRARIES} hibox hibus)

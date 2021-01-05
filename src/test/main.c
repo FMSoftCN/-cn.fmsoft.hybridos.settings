@@ -35,7 +35,7 @@ static void wifi_signal_handler(hibus_conn* conn, const char* from_endpoint, con
 
 static int wifi_scan_handler(hibus_conn* conn, const char* from_endpoint, const char* method_name, int ret_code, const char* ret_value)
 {
-    printf("============================================================================================================================== get scan result\n");
+    printf("============================================================================================================================== %s\n", ret_value);
     return 0;
 }
 
@@ -58,7 +58,7 @@ int main(void)
 
     endpoint = hibus_assemble_endpoint_name_alloc(HIBUS_LOCALHOST, APP_INETD_NAME, RUNNER_WIFI_NAME);
     //hibus_call_procedure_and_wait(hibus_context, endpoint, METHOD_WIFI_START_SCAN, "{\"abcd\":1234}", 1000, &ret_code, &ret_value);
-    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_START_SCAN, "{\"abcd\":1234}", 1000, wifi_scan_handler);
+    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_START_SCAN, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
     ret_code ++;
     hibus_subscribe_event(hibus_context, endpoint, WIFISIGNALSTRENGTHCHANGED, wifi_signal_handler);
 

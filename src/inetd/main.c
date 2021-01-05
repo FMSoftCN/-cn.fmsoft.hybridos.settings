@@ -19,79 +19,31 @@
 #include <minigui/common.h>
 #include <minigui/minigui.h>
 #include <hibus.h>
+#include <hibox/json.h>
 
 #include "inetd.h"
+#include "wifi.h"
+#include "mobile.h"
+#include "ethernet.h"
 
 #undef  DAEMON
 //#define DAEMON
 
-char * openDevice(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
-{
-#ifdef gengyue
-    ret_code = 0;
-    ret_code = wifi_device_Ops->open(NULL, &context);
-    if(ret_code)
-    {
-        fprintf(stderr, "WIFI DAEMON: error for open device. %d.\n", ret_code);
-        exit(1);
-    }
-
-        fprintf(stderr, "WIFI DAEMON: start scan. %d.\n", ret_code);
-    wifi_device_Ops->start_scan(context);
-        fprintf(stderr, "WIFI DAEMON: end scan. %d.\n", ret_code);
-    wifi_device_Ops->get_hotspots(context, NULL);
-#endif
-    return NULL;
-}
-
-char * closeDevice(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
-{
-    return NULL;
-}
-
-char * getNetworkDevicesStatus(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
-{
-    return NULL;
-}
-
-char * wifiStartScanHotspots(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
-{
-    return NULL;
-}
-
-char * wifiStopScanHotspots(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
-{
-    return NULL;
-}
-
-char * wifiConnect(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
-{
-    return NULL;
-}
-
-char * wifiDisconnect(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
-{
-    return NULL;
-}
-
-char * wifiGetNetworkInfo(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
-{
-    return NULL;
-}
-
-static int get_device_index(const network_device * device, const int device_num, const char * ifname)
+int get_device_index(const network_device * device, const char * ifname)
 {
     int i = 0;
+    int find_index = -1;
 
-    for(i = 0; i < device_num; i++)
+    for(i = 0; i < MAX_DEVICE_NUM; i++)
     {
-        if((ifname != NULL) && (strncasecmp(device[i].ifname, ifname, strlen(ifname)) == 0))
+        if((ifname != NULL) && device[i].ifname[0] && (strncasecmp(device[i].ifname, ifname, strlen(ifname)) == 0))
+        {
+            find_index = i;
             break;
+        }
     }
-    if(i >= device_num)
-        i = -1;
-    
-    return i;
+
+    return find_index;
 }
 
 static int if_is_wlif(const char * ifname)
@@ -143,7 +95,7 @@ static int getLocalInfo(network_device * device, int device_num)
 
         while (interfaceNum-- > 0)
         {
-            device_index = get_device_index(device, device_num, buf[interfaceNum].ifr_name);
+            device_index = get_device_index(device, buf[interfaceNum].ifr_name);
             if(device_index == -1)
                 continue;
 
@@ -344,7 +296,7 @@ static int init_from_etc_file(network_device * device, int device_num)
     while(GetValueFromEtcFile(config_path, "device", config_item, config_content, ETC_MAXLINE) == ETC_OK)
     {
         // get device index in device array
-        device_index = get_device_index(device, device_num, config_content);
+        device_index = get_device_index(device, config_content);
         if(device_index >= 0)
         {
             // get device type
@@ -433,121 +385,6 @@ static int init_from_etc_file(network_device * device, int device_num)
     }
     
     return library_load_num;
-}
-
-static void wifi_register(hibus_conn * hibus_context_wifi)
-{
-    int ret_code = 0;
-
-    ret_code = hibus_register_procedure(hibus_context_wifi, METHOD_WIFI_OPEN_DEVICE, NULL, NULL, openDevice);
-    if(ret_code)
-    {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_OPEN_DEVICE, hibus_get_err_message(ret_code));
-        return;
-    }
-
-    ret_code = hibus_register_procedure(hibus_context_wifi, METHOD_WIFI_CLOSE_DEVICE, NULL, NULL, closeDevice);
-    if(ret_code)
-    {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_CLOSE_DEVICE, hibus_get_err_message(ret_code));
-        return;
-    }
-
-    ret_code = hibus_register_procedure(hibus_context_wifi, METHOD_WIFI_GET_DEVICES_STATUS, NULL, NULL, getNetworkDevicesStatus);
-    if(ret_code)
-    {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_GET_DEVICES_STATUS, hibus_get_err_message(ret_code));
-        return;
-    }
-
-    ret_code = hibus_register_procedure(hibus_context_wifi, METHOD_WIFI_START_SCAN, NULL, NULL, wifiStartScanHotspots);
-    if(ret_code)
-    {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_START_SCAN, hibus_get_err_message(ret_code));
-        return;
-    }
-
-    ret_code = hibus_register_procedure(hibus_context_wifi, METHOD_WIFI_STOP_SCAN, NULL, NULL, wifiStopScanHotspots);
-    if(ret_code)
-    {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_STOP_SCAN, hibus_get_err_message(ret_code));
-        return;
-    }
-
-    ret_code = hibus_register_procedure(hibus_context_wifi, METHOD_WIFI_CONNECT_AP, NULL, NULL, wifiConnect);
-    if(ret_code)
-    {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_CONNECT_AP, hibus_get_err_message(ret_code));
-        return;
-    }
-
-    ret_code = hibus_register_procedure(hibus_context_wifi, METHOD_WIFI_DISCONNECT_AP, NULL, NULL, wifiDisconnect);
-    if(ret_code)
-    {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_DISCONNECT_AP, hibus_get_err_message(ret_code));
-        return;
-    }
-
-    ret_code = hibus_register_procedure(hibus_context_wifi, METHOD_WIFI_GET_NETWORK_INFO, NULL, NULL, wifiGetNetworkInfo);
-    if(ret_code)
-    {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_GET_NETWORK_INFO, hibus_get_err_message(ret_code));
-        return;
-    }
-
-    // step 5: register an event
-    ret_code = hibus_register_event(hibus_context_wifi, NETWORKDEVICECHANGED, NULL, NULL);
-    if(ret_code)
-    {
-        fprintf(stderr, "WIFI DAEMON: Error for register event %s, %s.\n", NETWORKDEVICECHANGED, hibus_get_err_message(ret_code));
-        return;
-    }
-
-    ret_code = hibus_register_event(hibus_context_wifi, WIFINEWHOTSPOTS, NULL, NULL);
-    if(ret_code)
-    {
-        fprintf(stderr, "WIFI DAEMON: Error for register event %s, %s.\n", WIFINEWHOTSPOTS, hibus_get_err_message(ret_code));
-        return;
-    }
-
-    ret_code = hibus_register_event(hibus_context_wifi, WIFISIGNALSTRENGTHCHANGED, NULL, NULL);
-    if(ret_code)
-    {
-        fprintf(stderr, "WIFI DAEMON: Error for register event %s, %s.\n", WIFISIGNALSTRENGTHCHANGED, hibus_get_err_message(ret_code));
-        return;
-    }
-}
-
-static void ethernet_register(hibus_conn * hibus_context_ethernet)
-{
-}
-
-static void mobile_register(hibus_conn * hibus_context_mobile)
-{
-}
-
-static void wifi_revoke(hibus_conn * hibus_context_wifi)
-{
-    hibus_revoke_event(hibus_context_wifi, WIFISIGNALSTRENGTHCHANGED);
-    hibus_revoke_event(hibus_context_wifi, WIFINEWHOTSPOTS);
-    hibus_revoke_event(hibus_context_wifi, NETWORKDEVICECHANGED);
-
-    hibus_revoke_procedure(hibus_context_wifi, METHOD_WIFI_OPEN_DEVICE);
-    hibus_revoke_procedure(hibus_context_wifi, METHOD_WIFI_CLOSE_DEVICE);
-    hibus_revoke_procedure(hibus_context_wifi, METHOD_WIFI_GET_DEVICES_STATUS);
-    hibus_revoke_procedure(hibus_context_wifi, METHOD_WIFI_START_SCAN);
-    hibus_revoke_procedure(hibus_context_wifi, METHOD_WIFI_STOP_SCAN);
-    hibus_revoke_procedure(hibus_context_wifi, METHOD_WIFI_CONNECT_AP);
-    hibus_revoke_procedure(hibus_context_wifi, METHOD_WIFI_DISCONNECT_AP);
-    hibus_revoke_procedure(hibus_context_wifi, METHOD_WIFI_GET_NETWORK_INFO);
-}
-
-static void ethernet_revoke(hibus_conn * hibus_context_ethernet)
-{
-}
-
-static void  mobile_revoke(hibus_conn * hibus_context_mobile)
-{
 }
 
 int main(void)
