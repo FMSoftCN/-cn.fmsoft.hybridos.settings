@@ -22,6 +22,7 @@
 #include <hibox/json.h>
 
 #include "inetd.h"
+#include "tools.h"
 #include "common.h"
 
 const char *op_errors[] = {

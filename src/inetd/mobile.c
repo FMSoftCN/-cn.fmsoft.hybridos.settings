@@ -22,6 +22,7 @@
 #include <hibox/json.h>
 
 #include "inetd.h"
+#include "tools.h"
 #include "mobile.h"
 
 void mobile_register(hibus_conn * hibus_context_inetd)

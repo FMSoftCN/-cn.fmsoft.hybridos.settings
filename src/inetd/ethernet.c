@@ -22,6 +22,7 @@
 #include <hibox/json.h>
 
 #include "inetd.h"
+#include "tools.h"
 #include "ethernet.h"
 
 void ethernet_register(hibus_conn * hibus_context_inetd)
