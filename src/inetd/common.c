@@ -105,15 +105,25 @@ char * openDevice(hibus_conn* conn, const char* from_endpoint, const char* to_me
             }
             else
             {
+                ret_code = ERR_OPEN_WIFI_DEVICE;
+                if(ifconfig_helper(device_name, 1))
+                    goto failed;
                 ret_code = wifi_device->wifi_device_Ops->open(device_name, &(wifi_device->context));
-                device[index].status = DEVICE_STATUS_UP;
             }
         }
         else if(device[index].type == DEVICE_TYPE_ETHERNET)
         {
+            ret_code = ERR_OPEN_ETHERNET_DEVICE;
+            if(ifconfig_helper(device_name, 1))
+                goto failed;
+            ret_code = ERR_NO;
         }
         else if(device[index].type == DEVICE_TYPE_MOBILE)
         {
+            ret_code = ERR_OPEN_MOBILE_DEVICE;
+            if(ifconfig_helper(device_name, 1))
+                goto failed;
+            ret_code = ERR_NO;
         }
         else
             ret_code = ERR_INVALID_DEVICE; 
@@ -191,15 +201,25 @@ char * closeDevice(hibus_conn* conn, const char* from_endpoint, const char* to_m
             }
             else
             {
+                ret_code = ERR_CLOSE_WIFI_DEVICE;
+                if(ifconfig_helper(device_name, 0))
+                    goto failed;
                 ret_code = wifi_device->wifi_device_Ops->close(wifi_device->context);
-                device[index].status = DEVICE_STATUS_DOWN;
             }
         }
         else if(device[index].type == DEVICE_TYPE_ETHERNET)
         {
+            ret_code = ERR_CLOSE_ETHERNET_DEVICE;
+            if(ifconfig_helper(device_name, 0))
+                goto failed;
+            ret_code = ERR_NO;
         }
         else if(device[index].type == DEVICE_TYPE_MOBILE)
         {
+            ret_code = ERR_CLOSE_MOBILE_DEVICE;
+            if(ifconfig_helper(device_name, 0))
+                goto failed;
+            ret_code = ERR_NO;
         }
         else
             ret_code = ERR_INVALID_DEVICE; 
@@ -249,13 +269,19 @@ char * getNetworkDevicesStatus(hibus_conn* conn, const char* from_endpoint, cons
                 type = "ethernet";
             else if(device[i].type == DEVICE_TYPE_MOBILE)
                 type = "mobile";
+            else if(device[i].type == DEVICE_TYPE_LO)
+                type = "lo";
             else
                 continue;
 
             if((device[i].status == DEVICE_STATUS_UNCERTAIN) || (device[i].status == DEVICE_STATUS_DOWN))
                 status = "down";
-            else
+            else if(device[i].status == DEVICE_STATUS_UP)
                 status = "up";
+            else if(device[i].status == DEVICE_STATUS_LINK)
+                status = "link";
+            else
+                status = "unlink";
 
             if(!first)
             {
@@ -263,7 +289,18 @@ char * getNetworkDevicesStatus(hibus_conn* conn, const char* from_endpoint, cons
             }
             first = false;
 
-            sprintf(ret_string + strlen(ret_string), "{\"device\":\"%s\", \"type\":\"%s\", \"status\":\"%s\"}", device[i].ifname, type, status);
+            sprintf(ret_string + strlen(ret_string), 
+                    "{"
+                        "\"device\":\"%s\","
+                        "\"type\":\"%s\","
+                        "\"status\":\"%s\","
+                        "\"mac\":\"%s\","
+                        "\"ip\":\"%s\","
+                        "\"broadcast\":\"%s\","
+                        "\"subnetmask\":\"%s\""
+                    "}",
+                    device[i].ifname, type, status, device[i].mac,
+                    device[i].ip, device[i].broadAddr, device[i].subnetMask);
         }
         else
             break;

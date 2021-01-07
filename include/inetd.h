@@ -96,10 +96,19 @@ typedef struct _hiWiFiDeviceOps
 #define ERR_NOT_WIFI_DEVICE             -8
 #define ERR_OPEN_WIFI_DEVICE            -9
 #define ERR_CLOSE_WIFI_DEVICE           -10
+#define ERR_OPEN_ETHERNET_DEVICE        -11
+#define ERR_CLOSE_ETHERNET_DEVICE       -12
+#define ERR_OPEN_MOBILE_DEVICE          -13
+#define ERR_CLOSE_MOBILE_DEVICE         -14
 
-
-
-
+// for network changed
+#define NETWORK_CHANGED_NAME            ((0x01) << 0)
+#define NETWORK_CHANGED_TYPE            ((0x01) << 1)
+#define NETWORK_CHANGED_STATUS          ((0x01) << 2)
+#define NETWORK_CHANGED_MAC             ((0x01) << 3)
+#define NETWORK_CHANGED_IP              ((0x01) << 4)
+#define NETWORK_CHANGED_BROADCAST       ((0x01) << 5)
+#define NETWORK_CHANGED_SUBNETMASK      ((0x01) << 6)
 
 
 typedef struct _WiFi_device
@@ -111,6 +120,7 @@ typedef struct _WiFi_device
 } WiFi_device;
 
 #define NETWORK_DEVICE_NAME_LENGTH  32
+#define NETWORK_ADDRESS_LENGTH      32
 typedef struct _network_device
 {
     char ifname[NETWORK_DEVICE_NAME_LENGTH];
@@ -119,13 +129,13 @@ typedef struct _network_device
     int priority;
     void * device;
     void * lib_handle;
-    char mac[16];
-    char ip[32];
-    char broadAddr[32];
-    char subnetMask[32];
+    char mac[NETWORK_ADDRESS_LENGTH];
+    char ip[NETWORK_ADDRESS_LENGTH];
+    char broadAddr[NETWORK_ADDRESS_LENGTH];
+    char subnetMask[NETWORK_ADDRESS_LENGTH];
 } network_device;
 
-int get_device_index(const network_device * device, const char * ifname);
+
 
 // for test
 #define AGENT_NAME          "cn.fmsoft.hybridos.sysmgr"

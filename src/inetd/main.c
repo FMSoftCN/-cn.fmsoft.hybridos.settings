@@ -250,9 +250,6 @@ int main(void)
         exit(1);
     }
 
-for(i = 0; i < device_num; i++)
-    printf("%s: %s, %s, %s, %s\n", device[i].ifname, device[i].ip, device[i].mac, device[i].broadAddr, device[i].subnetMask);
-
     // step 2: get library setting from configure file
     if(init_from_etc_file(device, device_num) == 0)
     {
