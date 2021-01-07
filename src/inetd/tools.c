@@ -214,7 +214,7 @@ int get_if_name(network_device * device)
         {
             strcpy(device[number].ifname, i->if_name);
             get_if_info(&device[number]);
-// printf("================================ %s: %d, %d, %s, %s, %s, %s\n", device[number].ifname, device[number].type, device[number].status, device[number].ip, device[number].mac, device[number].broadAddr, device[number].subnetMask);
+printf("================================ %s: %d, %d, %s, %s, %s, %s\n", device[number].ifname, device[number].type, device[number].status, device[number].ip, device[number].mac, device[number].broadAddr, device[number].subnetMask);
             ++number;
         }
         if_freenameindex(if_ni);

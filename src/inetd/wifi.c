@@ -33,68 +33,109 @@ char * wifiStartScanHotspots(hibus_conn* conn, const char* from_endpoint, const 
     hibus_json *jo_tmp = NULL;
     const char * device_name = NULL;
     int index = -1;
-    int ret_code = 0;
+    int ret_code = ERR_NO;
     char * ret_string = malloc(4096);
     WiFi_device * wifi_device = NULL;
 
+    // get device array
     network_device * device = hibus_conn_get_user_data(conn);
     if(device == NULL)
     {
-        ret_code = -1;
+        ret_code = ERR_NONE_DEVICE_LIST;
         goto failed;
     }
 
+    // get procedure name
     if(strncasecmp(to_method, METHOD_WIFI_START_SCAN, strlen(METHOD_WIFI_START_SCAN)))
     {
-        ret_code = -2;
+        ret_code = ERR_WRONG_PROCEDURE;
         goto failed;
     }
 
+    // analyze json
     jo = hibus_json_object_from_string(method_param, strlen(method_param), 2);
     if(jo == NULL)
     {
-        ret_code = -3;
+        ret_code = ERR_WRONG_JSON;
         goto failed;
     }
 
+    // get device name
     if(json_object_object_get_ex(jo, "device", &jo_tmp) == 0)
     {
-        ret_code = -3;
+        ret_code = ERR_WRONG_JSON;
         goto failed;
     }
 
     device_name = json_object_get_string(jo_tmp);
     if(device_name && strlen(device_name) == 0)
     {
-        ret_code = -4;
+        ret_code = ERR_NO_DEVICE_NAME_IN_PARAM;
         goto failed;
     }
 
+    // device does exist?
     index = get_device_index(device, device_name);
     if(index == -1)
     {
-        ret_code = -5;
+        ret_code = ERR_NO_DEVICE_IN_SYSTEM;
         goto failed;
     }
 
     if(device[index].type != DEVICE_TYPE_WIFI)
     {
-        ret_code = -6;
+        ret_code = ERR_NOT_WIFI_DEVICE;
         goto failed;
     }
         
+    wifi_device = (WiFi_device *)device[index].device;
+    if(wifi_device == NULL)
+    {
+        ret_code = ERR_NO_OPERATION_LIST;
+        goto failed;
+    }
+    else
+    {
+        if(wifi_device->context == NULL)
+        {
+            ret_code = wifi_device->wifi_device_Ops->open(device_name, &(wifi_device->context));
+            if(ret_code)
+            {
+                ret_code = ERR_CLOSE_WIFI_DEVICE;
+                goto failed;
+            }
+        }
+    }
+
+    if(wifi_device->context == NULL)
+    {
+        ret_code = ERR_OPEN_WIFI_DEVICE;
+        goto failed;
+    }
+
+    if((device[index].status == DEVICE_STATUS_DOWN) || (device[index].status == DEVICE_STATUS_UNCERTAIN))
+    {
+        ret_code = ERR_OPEN_WIFI_DEVICE;
+        if(ifconfig_helper(device_name, 1))
+            goto failed;
+    }
+
+printf("========================================================================= 11111111111111111111122222222222 %p\n", wifi_device->wifi_device_Ops);
+//    ret_code = wifi_device->wifi_device_Ops->start_scan(&(wifi_device->context));
+
+printf("========================================================================= 111111111111111111111333333333333\n");
 failed:
     if(jo)
         json_object_put (jo);
 
+    memset(ret_string, 0, 4096);
+    sprintf(ret_string, "{\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
+    return ret_string;
+
+
 #ifdef gengyue
-    wifi_device_Ops->start_scan(context);
-        fprintf(stderr, "WIFI DAEMON: end scan. %d.\n", ret_code);
     wifi_device_Ops->get_hotspots(context, NULL);
 #endif
-    memset(ret_string, 0, 128);
-    sprintf(ret_string, "{\"data\":\"\", \"errCode\":\"%d\", \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
-    return ret_string;
 }
 
 char * wifiStopScanHotspots(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
@@ -153,6 +194,9 @@ char * wifiStopScanHotspots(hibus_conn* conn, const char* from_endpoint, const c
         goto failed;
     }
         
+//                if(wifi_device->context == NULL)
+//                    ret_code = wifi_device->wifi_device_Ops->open(device_name, &(wifi_device->context));
+
 failed:
     if(jo)
         json_object_put (jo);
@@ -223,6 +267,9 @@ char * wifiConnect(hibus_conn* conn, const char* from_endpoint, const char* to_m
         goto failed;
     }
         
+//                if(wifi_device->context == NULL)
+//                    ret_code = wifi_device->wifi_device_Ops->open(device_name, &(wifi_device->context));
+
 failed:
     if(jo)
         json_object_put (jo);
@@ -293,6 +340,9 @@ char * wifiDisconnect(hibus_conn* conn, const char* from_endpoint, const char* t
         goto failed;
     }
         
+//                if(wifi_device->context == NULL)
+//                    ret_code = wifi_device->wifi_device_Ops->open(device_name, &(wifi_device->context));
+
 failed:
     if(jo)
         json_object_put (jo);
@@ -309,6 +359,9 @@ failed:
 
 char * wifiGetNetworkInfo(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
 {
+//                if(wifi_device->context == NULL)
+//                    ret_code = wifi_device->wifi_device_Ops->open(device_name, &(wifi_device->context));
+
     return NULL;
 }
 

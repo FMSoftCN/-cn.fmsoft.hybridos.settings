@@ -324,6 +324,7 @@ int start_scan(wifi_context * context)
 
     context->event_label++;
     ret_code = context->p_wifi_interface->start_scan(context->event_label);
+
     return ret_code;
 }
 

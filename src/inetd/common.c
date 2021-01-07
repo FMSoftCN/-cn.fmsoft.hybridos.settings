@@ -204,7 +204,12 @@ char * closeDevice(hibus_conn* conn, const char* from_endpoint, const char* to_m
                 ret_code = ERR_CLOSE_WIFI_DEVICE;
                 if(ifconfig_helper(device_name, 0))
                     goto failed;
-                ret_code = wifi_device->wifi_device_Ops->close(wifi_device->context);
+
+                if(wifi_device->context)
+                {
+                    ret_code = wifi_device->wifi_device_Ops->close(wifi_device->context);
+                    wifi_device->context = NULL;
+                }
             }
         }
         else if(device[index].type == DEVICE_TYPE_ETHERNET)

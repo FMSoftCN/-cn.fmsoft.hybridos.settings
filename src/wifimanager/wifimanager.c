@@ -60,10 +60,12 @@ static int aw_wifi_scan(int event_label)
     int ret = 0;
     tWIFI_MACHINE_STATE wifi_machine_state;
 
+printf("aaaaaaaaaaaaaaaaaaaaaaaaa\n");
     if(gwifi_state == WIFIMG_WIFI_DISABLED){
         return -1;
     }
 
+printf("aaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbb\n");
     wifi_machine_state = get_wifi_machine_state();
     if(wifi_machine_state != CONNECTED_STATE && wifi_machine_state != DISCONNECTED_STATE){
         ret = -1;
@@ -71,12 +73,15 @@ static int aw_wifi_scan(int event_label)
         goto end;
     }
 
+printf("aaaaaaaaaaaaaaaaaaaaaaaaacccccccccccc\n");
     update_scan_results();
 
+printf("aaaaaaaaaaaaaaaaaaaaaaaaadddddddddd\n");
 end:
     if(ret != WIFI_MANAGER_SUCCESS){
         call_event_callback_function(event_code, NULL, event_label);
     }
+printf("aaaaaaaaaaaaaaaaaaaaaaaaaeeeeeeeeeee\n");
 
     return ret;
 }
