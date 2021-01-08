@@ -1374,7 +1374,7 @@ static int aw_wifi_remove_all_networks()
 
 static int aw_wifi_connect_ap_auto(int event_label)
 {
-    int i=0, ret = -1;
+    int ret = -1;
     char cmd[CMD_LEN+1] = {0}, reply[REPLY_BUF_SIZE] = {0};
     tWIFI_MACHINE_STATE wifi_machine_state;
 
@@ -1514,7 +1514,7 @@ end:
 
 static int aw_wifi_list_networks(char *reply, size_t reply_len, int event_label)
 {
-	 int i=0, ret = -1;
+	 int ret = -1;
 	char cmd[CMD_LEN+1] = {0};
 	//char reply[REPLY_BUF_SIZE] = {0};
 	//char netid[NET_ID_LEN+1]={0};

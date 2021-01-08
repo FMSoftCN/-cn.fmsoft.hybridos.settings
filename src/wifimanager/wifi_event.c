@@ -281,8 +281,9 @@ void start_check_connect_timeout(int first)
 
 void *wifi_on_check_connect_timeout(void *args)
 {
-	  int i = 0;
+    int i = 0;
     char cmd[255] = {0}, reply[16]={0};
+//    tWIFI_EVENT_INNER    event;
     tWIFI_MACHINE_STATE  state;
 
     /* sync wpa_supplicant state */
@@ -291,13 +292,13 @@ void *wifi_on_check_connect_timeout(void *args)
         usleep(100000);
 
         state = get_wifi_machine_state();
-        event = get_cur_wifi_event();
-
+//        event = get_cur_wifi_event();
+        get_cur_wifi_event();
         i++;
     } while((state != L2CONNECTED_STATE) && (state != CONNECTED_STATE) && (i < 100));
 
     if((state != L2CONNECTED_STATE) && (state != CONNECTED_STATE)){
-	  /* send disconnect */
+        /* send disconnect */
         sprintf(cmd, "%s", "DISCONNECT");
         wifi_command(cmd, reply, sizeof(reply));
 
