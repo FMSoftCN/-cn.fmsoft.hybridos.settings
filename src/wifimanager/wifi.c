@@ -20,9 +20,6 @@ static struct wpa_ctrl *monitor_conn;
 /* socket pair used to exit from a blocking read */
 static int exit_sockets[2];
 
-//static const char IFACE_DIR[]           = "/data/misc/wifi/sockets";
-static const char IFACE_DIR[]           = "/etc/wifi/sockets";
-static char primary_iface[IFACE_VALUE_MAX];
 static const char SUPP_CONFIG_TEMPLATE[]= "/etc/wifi/wpa_supplicant_src.conf";
 static const char SUPP_CONFIG_FILE[]    = "/etc/wifi/wpa_supplicant.conf";
 static const char CONTROL_IFACE_PATH[]  = "/etc/wifi/sockets";
@@ -100,7 +97,7 @@ static int rmmod(const char *modname)
 int wifi_load_driver(const char *path, const char *args)
 {
 	int  count = 0;
-	int  i=0, name_len = 0;
+	int  i=0;
 	int  ret        = 0;
 	char name[256] = {0}, tmp_buf[512] = {0};
     const char * p_s = NULL, * p_e = NULL;
@@ -261,7 +258,6 @@ int update_ctrl_interface(const char *config_file) {
             char *iptr = sptr + strlen("ctrl_interface=");
             int ilen = 0;
             int mlen = strlen(ifc);
-            int nwrite;
             if (strncmp(ifc, iptr, mlen) != 0) {
                 printf("ctrl_interface != %s\n", ifc);
                 while (((ilen + (iptr - pbuf)) < nread) && (iptr[ilen] != '\n'))
@@ -289,7 +285,6 @@ int ensure_config_file_exists(const char *config_file)
 {
     char buf[2048];
     int srcfd, destfd;
-    struct stat sb;
     int nread;
     int ret;
 

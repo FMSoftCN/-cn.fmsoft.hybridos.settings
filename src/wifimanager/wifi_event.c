@@ -284,7 +284,6 @@ void *wifi_on_check_connect_timeout(void *args)
 	  int i = 0;
     char cmd[255] = {0}, reply[16]={0};
     tWIFI_MACHINE_STATE  state;
-    tWIFI_EVENT_INNER    event;
 
     /* sync wpa_supplicant state */
     i = 0;

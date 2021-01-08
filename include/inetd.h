@@ -6,7 +6,11 @@
 #define INETD_LIBRARY_PATH  "/home/projects/inetd/lib"
 
 // ================ For WiFi <<<<  =========================================================
-struct _wifi_context;
+struct _wifi_context
+{
+    const aw_wifi_interface_t * p_wifi_interface;
+    int event_label;
+};
 typedef struct _wifi_context wifi_context;
 
 #define HOTSPOT_STRING_LENGTH 40

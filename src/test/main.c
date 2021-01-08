@@ -26,6 +26,7 @@
 #include <arpa/inet.h>
 #include <hibus.h>
 
+#include "../include/wifi_intf.h"
 #include "../include/inetd.h"
 
 static void wifi_signal_handler(hibus_conn* conn, const char* from_endpoint, const char* bubble_name, const char* bubble_data)

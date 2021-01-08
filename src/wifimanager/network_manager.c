@@ -13,9 +13,8 @@
 #define WAITING_CLK_COUNTS   50
 #define SSID_LEN	512
 
-/* scan thread */
-static pthread_t       scan_thread_id;
-static int  scan_running = 0;
+static pthread_t scan_thread_id;
+static int scan_running = 0;
 static pthread_mutex_t scan_mutex;
 static pthread_cond_t  scan_cond;
 static int  scan_pause = 0;
@@ -29,6 +28,8 @@ static pthread_cond_t  thread_run_cond;
 static char scan_results[SCAN_BUF_LEN];
 static int  scan_results_len = 0;
 static int  scan_completed = 0;
+
+static int scan_interval = 30;
 
 int update_scan_results()
 {
@@ -113,7 +114,7 @@ int is_network_exist(const char *ssid, tKEY_MGMT key_mgmt)
 
 int get_key_mgmt(const char *ssid, int key_mgmt_info[])
 {
-    char *ptr = NULL, *pssid_start = NULL, *pssid_end = NULL;
+    char *ptr = NULL, *pssid_start = NULL;
     char *pst = NULL, *pend = NULL;
     char *pflag = NULL;
     char flag[128], pssid[SSID_LEN + 1];
@@ -208,10 +209,8 @@ void *wifi_scan_thread(void *args)
              pthread_cond_wait(&scan_cond, &scan_mutex);
         }
 
-
         /* set scan start flag */
         set_scan_start_flag();
-
 
         /* scan cmd */
         strncpy(cmd, "SCAN", 15);
@@ -256,11 +255,12 @@ void *wifi_scan_thread(void *args)
         }
 
         gettimeofday(&now, NULL);
-        outtime.tv_sec = now.tv_sec + 15;
+        outtime.tv_sec = now.tv_sec + scan_interval;
         outtime.tv_nsec = now.tv_usec *1000;
         pthread_cond_timedwait(&thread_run_cond, &thread_run_mutex, &outtime);
         pthread_mutex_unlock(&thread_run_mutex);
     }
+    return NULL;
 }
 
 void start_wifi_scan_thread(void *args)
@@ -278,6 +278,11 @@ void pause_wifi_scan_thread()
     pthread_mutex_lock(&scan_mutex);
     scan_pause=1;
     pthread_mutex_unlock(&scan_mutex);
+}
+
+void set_scan_interval(int interval)
+{
+    scan_interval = interval;
 }
 
 void resume_wifi_scan_thread()

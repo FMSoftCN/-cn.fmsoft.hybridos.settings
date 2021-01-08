@@ -9,6 +9,8 @@ int set_wifi_machine_state(tWIFI_MACHINE_STATE state)
 {
 	//printf("set_wifi_machine_state 0x%x\n", state);
     gwifi_machine_state = state;
+
+    return 0;
 }
 
 /* get wifi state */

@@ -12,11 +12,12 @@
 #include "inetd.h"
 
 #define CONFIG_CTRL_IFACE_DIR "/var/run/wpa_supplicant"
-typedef struct _wifi_context
-{
-    const aw_wifi_interface_t * p_wifi_interface;
-    int event_label;
-} wifi_context;
+
+//struct _wifi_context
+//{
+//    const aw_wifi_interface_t * p_wifi_interface;
+//    int event_label;
+//};
 
 static hiWiFiDeviceOps wifiOps;
 
@@ -322,6 +323,9 @@ int start_scan(wifi_context * context)
 {
     int ret_code = 0;
 
+    if(context == NULL)
+        return -1;
+
     context->event_label++;
     ret_code = context->p_wifi_interface->start_scan(context->event_label);
 
@@ -331,6 +335,10 @@ int start_scan(wifi_context * context)
 int stop_scan(wifi_context * context)
 {
     int ret_code = 0;
+
+    if(context == NULL)
+        return -1;
+
     return ret_code;
 }
 

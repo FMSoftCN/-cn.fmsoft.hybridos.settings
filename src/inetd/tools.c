@@ -21,6 +21,7 @@
 #include <hibus.h>
 #include <hibox/json.h>
 
+#include "wifi_intf.h"
 #include "inetd.h"
 #include "tools.h"
 #include "wifi.h"

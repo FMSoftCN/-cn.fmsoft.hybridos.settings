@@ -9,7 +9,6 @@ extern int is_ip_exist();
 
 int wpa_conf_network_info_exist()
 {
-    int ret = -1;
     char cmd[256] = {0}, reply[REPLY_BUF_SIZE] = {0};
 
     strncpy(cmd, "LIST_NETWORKS", 255);

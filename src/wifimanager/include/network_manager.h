@@ -12,6 +12,7 @@ extern "C" {
 
 void start_wifi_scan_thread(void *args);
 void stop_wifi_scan_thread();
+void set_scan_interval(int interval);
 void pause_wifi_scan_thread();
 void resume_wifi_scan_thread();
 int  update_scan_results();
