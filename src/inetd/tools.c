@@ -119,11 +119,11 @@ int get_if_info(network_device * device)
     // initialize
     device->type = DEVICE_TYPE_UNKONWN;
     device->status = DEVICE_STATUS_UNCERTAIN;
-    device->priority = 0;
     memset(device->mac, 0, NETWORK_ADDRESS_LENGTH);
     memset(device->ip, 0, NETWORK_ADDRESS_LENGTH);
     memset(device->broadAddr, 0, NETWORK_ADDRESS_LENGTH);
     memset(device->subnetMask, 0, NETWORK_ADDRESS_LENGTH);
+    device->speed = 0;
 
     // set device interface name
     memset(&ifr, 0, sizeof(ifr));
@@ -150,7 +150,14 @@ int get_if_info(network_device * device)
         if(ret < 0)
             device->type = DEVICE_TYPE_ETHERNET;
         else
+        {
             device->type = DEVICE_TYPE_WIFI;
+
+            // get wifi speed
+            ret = ioctl(socket_fd, SIOCGIWRATE, &wrq);
+            if(ret >= 0)
+                device->speed = wrq.u.bitrate.value / 1000000;
+        }
     }
     // TODO: how to judge mobile device
 
@@ -191,6 +198,7 @@ int get_if_info(network_device * device)
             snprintf(device->subnetMask, sizeof(device->subnetMask), "%s",
                     (char *)inet_ntoa(((struct sockaddr_in *)&(ifr.ifr_netmask))->sin_addr));
         }
+
     }
 
     close(socket_fd);
@@ -215,7 +223,7 @@ int get_if_name(network_device * device)
         {
             strcpy(device[number].ifname, i->if_name);
             get_if_info(&device[number]);
-printf("================================ %s: %d, %d, %s, %s, %s, %s\n", device[number].ifname, device[number].type, device[number].status, device[number].ip, device[number].mac, device[number].broadAddr, device[number].subnetMask);
+printf("================================ %s: %d, %d, %s, %s, %s, %s, %d\n", device[number].ifname, device[number].type, device[number].status, device[number].ip, device[number].mac, device[number].broadAddr, device[number].subnetMask, device[number].speed);
             ++number;
         }
         if_freenameindex(if_ni);

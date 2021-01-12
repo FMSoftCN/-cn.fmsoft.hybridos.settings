@@ -438,6 +438,7 @@ int wifi_connect_to_supplicant()
 int wifi_send_command(const char *cmd, char *reply, size_t *reply_len)
 {
     int ret;
+
     if (ctrl_conn == NULL) {
         printf("Not connected to wpa_supplicant - \"%s\" command dropped.\n", cmd);
         return -1;

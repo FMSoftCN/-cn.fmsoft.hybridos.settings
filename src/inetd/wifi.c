@@ -89,29 +89,20 @@ char * wifiStartScanHotspots(hibus_conn* conn, const char* from_endpoint, const 
         goto failed;
     }
         
+    // whether library has been loaded
     wifi_device = (WiFi_device *)device[index].device;
     if(wifi_device == NULL)
     {
-        ret_code = ERR_NO_OPERATION_LIST;
+        ret_code = ERR_LOAD_LIBRARY;
         goto failed;
     }
     else
     {
         if(wifi_device->context == NULL)
         {
-            ret_code = wifi_device->wifi_device_Ops->open(device_name, &(wifi_device->context));
-            if(ret_code)
-            {
-                ret_code = ERR_CLOSE_WIFI_DEVICE;
-                goto failed;
-            }
+            ret_code = ERR_DEVICE_NOT_OPENNED;
+            goto failed;
         }
-    }
-
-    if(wifi_device->context == NULL)
-    {
-        ret_code = ERR_OPEN_WIFI_DEVICE;
-        goto failed;
     }
 
     if((device[index].status == DEVICE_STATUS_DOWN) || (device[index].status == DEVICE_STATUS_UNCERTAIN))
@@ -130,7 +121,6 @@ failed:
     memset(ret_string, 0, 4096);
     sprintf(ret_string, "{\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
     return ret_string;
-
 
 #ifdef gengyue
     wifi_device_Ops->get_hotspots(context, NULL);
@@ -201,26 +191,16 @@ char * wifiStopScanHotspots(hibus_conn* conn, const char* from_endpoint, const c
     wifi_device = (WiFi_device *)device[index].device;
     if(wifi_device == NULL)
     {
-        ret_code = ERR_NO_OPERATION_LIST;
+        ret_code = ERR_LOAD_LIBRARY;
         goto failed;
     }
     else
     {
         if(wifi_device->context == NULL)
         {
-            ret_code = wifi_device->wifi_device_Ops->open(device_name, &(wifi_device->context));
-            if(ret_code)
-            {
-                ret_code = ERR_CLOSE_WIFI_DEVICE;
-                goto failed;
-            }
+            ret_code = ERR_DEVICE_NOT_OPENNED;
+            goto failed;
         }
-    }
-
-    if(wifi_device->context == NULL)
-    {
-        ret_code = ERR_OPEN_WIFI_DEVICE;
-        goto failed;
     }
 
     if((device[index].status == DEVICE_STATUS_DOWN) || (device[index].status == DEVICE_STATUS_UNCERTAIN))
@@ -246,72 +226,123 @@ char * wifiConnect(hibus_conn* conn, const char* from_endpoint, const char* to_m
     hibus_json *jo = NULL;
     hibus_json *jo_tmp = NULL;
     const char * device_name = NULL;
+    const char * ssid = NULL;
+    const char * password = NULL;
     int index = -1;
-    int ret_code = 0;
+    int ret_code = ERR_NO;
     char * ret_string = malloc(4096);
     WiFi_device * wifi_device = NULL;
 
+    // get device array
     network_device * device = hibus_conn_get_user_data(conn);
     if(device == NULL)
     {
-        ret_code = -1;
+        ret_code = ERR_NONE_DEVICE_LIST;
         goto failed;
     }
 
+    // get procedure name
     if(strncasecmp(to_method, METHOD_WIFI_CONNECT_AP, strlen(METHOD_WIFI_CONNECT_AP)))
     {
-        ret_code = -2;
+        ret_code = ERR_WRONG_PROCEDURE;
         goto failed;
     }
 
+    // analyze json
     jo = hibus_json_object_from_string(method_param, strlen(method_param), 2);
     if(jo == NULL)
     {
-        ret_code = -3;
+        ret_code = ERR_WRONG_JSON;
         goto failed;
     }
 
+    // get device name
     if(json_object_object_get_ex(jo, "device", &jo_tmp) == 0)
     {
-        ret_code = -3;
+        ret_code = ERR_WRONG_JSON;
         goto failed;
     }
 
     device_name = json_object_get_string(jo_tmp);
     if(device_name && strlen(device_name) == 0)
     {
-        ret_code = -4;
+        ret_code = ERR_NO_DEVICE_NAME_IN_PARAM;
         goto failed;
     }
 
+    // device does exist?
     index = get_device_index(device, device_name);
     if(index == -1)
     {
-        ret_code = -5;
+        ret_code = ERR_NO_DEVICE_IN_SYSTEM;
         goto failed;
     }
 
     if(device[index].type != DEVICE_TYPE_WIFI)
     {
-        ret_code = -6;
+        ret_code = ERR_NOT_WIFI_DEVICE;
         goto failed;
     }
-        
-//                if(wifi_device->context == NULL)
-//                    ret_code = wifi_device->wifi_device_Ops->open(device_name, &(wifi_device->context));
+    
+    // get WiFi ssid 
+    if(json_object_object_get_ex(jo, "ssid", &jo_tmp) == 0)
+    {
+        ret_code = ERR_WRONG_JSON;
+        goto failed;
+    }
+
+    ssid = json_object_get_string(jo_tmp);
+    if(ssid && strlen(ssid) == 0)
+    {
+        ret_code = ERR_NO_DEVICE_NAME_IN_PARAM;
+        goto failed;
+    }
+
+    // get WiFi password 
+    if(json_object_object_get_ex(jo, "password", &jo_tmp) == 0)
+    {
+        ret_code = ERR_WRONG_JSON;
+        goto failed;
+    }
+
+    password = json_object_get_string(jo_tmp);
+    if(password && strlen(password) == 0)
+    {
+        ret_code = ERR_NO_DEVICE_NAME_IN_PARAM;
+        goto failed;
+    }
+
+    wifi_device = (WiFi_device *)device[index].device;
+    if(wifi_device == NULL)
+    {
+        ret_code = ERR_LOAD_LIBRARY;
+        goto failed;
+    }
+    else
+    {
+        if(wifi_device->context == NULL)
+        {
+            ret_code = ERR_DEVICE_NOT_OPENNED;
+            goto failed;
+        }
+    }
+
+    if((device[index].status == DEVICE_STATUS_DOWN) || (device[index].status == DEVICE_STATUS_UNCERTAIN))
+    {
+        ret_code = ERR_OPEN_WIFI_DEVICE;
+        if(ifconfig_helper(device_name, 1))
+            goto failed;
+    }
+
+    ret_code = wifi_device->wifi_device_Ops->connect(wifi_device->context, ssid, password);
 
 failed:
     if(jo)
         json_object_put (jo);
 
-    if(ret_code)
-    {
-        memset(ret_string, 0, 128);
-        sprintf(ret_string, "{\"data\":\"\", \"errCode\":\"%d\", \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
-        return ret_string;
-    }
-
-    return strdup("{\"data\":\"\", \"errCode\":\"0\", \"errMsg\":\"OK\"}");
+    memset(ret_string, 0, 4096);
+    sprintf(ret_string, "{\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
+    return ret_string;
 }
 
 char * wifiDisconnect(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
@@ -320,79 +351,274 @@ char * wifiDisconnect(hibus_conn* conn, const char* from_endpoint, const char* t
     hibus_json *jo_tmp = NULL;
     const char * device_name = NULL;
     int index = -1;
-    int ret_code = 0;
+    int ret_code = ERR_NO;
     char * ret_string = malloc(4096);
     WiFi_device * wifi_device = NULL;
 
+    // get device array
     network_device * device = hibus_conn_get_user_data(conn);
     if(device == NULL)
     {
-        ret_code = -1;
+        ret_code = ERR_NONE_DEVICE_LIST;
         goto failed;
     }
 
-    if(strncasecmp(to_method, METHOD_WIFI_DISCONNECT_AP, strlen(METHOD_WIFI_DISCONNECT_AP)))
+    // get procedure name
+    if(strncasecmp(to_method, METHOD_WIFI_DISCONNECT_AP, strlen(METHOD_WIFI_CONNECT_AP)))
     {
-        ret_code = -2;
+        ret_code = ERR_WRONG_PROCEDURE;
         goto failed;
     }
 
+    // analyze json
     jo = hibus_json_object_from_string(method_param, strlen(method_param), 2);
     if(jo == NULL)
     {
-        ret_code = -3;
+        ret_code = ERR_WRONG_JSON;
         goto failed;
     }
 
+    // get device name
     if(json_object_object_get_ex(jo, "device", &jo_tmp) == 0)
     {
-        ret_code = -3;
+        ret_code = ERR_WRONG_JSON;
         goto failed;
     }
 
     device_name = json_object_get_string(jo_tmp);
     if(device_name && strlen(device_name) == 0)
     {
-        ret_code = -4;
+        ret_code = ERR_NO_DEVICE_NAME_IN_PARAM;
         goto failed;
     }
 
+    // device does exist?
     index = get_device_index(device, device_name);
     if(index == -1)
     {
-        ret_code = -5;
+        ret_code = ERR_NO_DEVICE_IN_SYSTEM;
         goto failed;
     }
 
     if(device[index].type != DEVICE_TYPE_WIFI)
     {
-        ret_code = -6;
+        ret_code = ERR_NOT_WIFI_DEVICE;
         goto failed;
     }
-        
-//                if(wifi_device->context == NULL)
-//                    ret_code = wifi_device->wifi_device_Ops->open(device_name, &(wifi_device->context));
+    
+    wifi_device = (WiFi_device *)device[index].device;
+    if(wifi_device == NULL)
+    {
+        ret_code = ERR_LOAD_LIBRARY;
+        goto failed;
+    }
+    else
+    {
+        if(wifi_device->context == NULL)
+        {
+            ret_code = ERR_DEVICE_NOT_OPENNED;
+            goto failed;
+        }
+    }
+
+    if((device[index].status != DEVICE_STATUS_DOWN) && (device[index].status != DEVICE_STATUS_UNCERTAIN))
+        ret_code = wifi_device->wifi_device_Ops->disconnect(wifi_device->context);
 
 failed:
     if(jo)
         json_object_put (jo);
 
-    if(ret_code)
-    {
-        memset(ret_string, 0, 128);
-        sprintf(ret_string, "{\"data\":\"\", \"errCode\":\"%d\", \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
-        return ret_string;
-    }
-
-    return strdup("{\"data\":\"\", \"errCode\":\"0\", \"errMsg\":\"OK\"}");
+    memset(ret_string, 0, 4096);
+    sprintf(ret_string, "{\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
+    return ret_string;
 }
 
 char * wifiGetNetworkInfo(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
 {
-//                if(wifi_device->context == NULL)
-//                    ret_code = wifi_device->wifi_device_Ops->open(device_name, &(wifi_device->context));
+    hibus_json *jo = NULL;
+    hibus_json *jo_tmp = NULL;
+    const char * device_name = NULL;
+    char reply[512];
+    int reply_length = 512;
+    int index = -1;
+    int ret_code = ERR_NO;
+    char * ret_string = malloc(4096);
+    WiFi_device * wifi_device = NULL;
 
-    return NULL;
+    // get device array
+    network_device * device = hibus_conn_get_user_data(conn);
+    if(device == NULL)
+    {
+        ret_code = ERR_NONE_DEVICE_LIST;
+        goto failed;
+    }
+
+    // get procedure name
+    if(strncasecmp(to_method, METHOD_WIFI_GET_NETWORK_INFO, strlen(METHOD_WIFI_GET_NETWORK_INFO)))
+    {
+        ret_code = ERR_WRONG_PROCEDURE;
+        goto failed;
+    }
+
+    // analyze json
+    jo = hibus_json_object_from_string(method_param, strlen(method_param), 2);
+    if(jo == NULL)
+    {
+        ret_code = ERR_WRONG_JSON;
+        goto failed;
+    }
+
+    // get device name
+    if(json_object_object_get_ex(jo, "device", &jo_tmp) == 0)
+    {
+        ret_code = ERR_WRONG_JSON;
+        goto failed;
+    }
+
+    device_name = json_object_get_string(jo_tmp);
+    if(device_name && strlen(device_name) == 0)
+    {
+        ret_code = ERR_NO_DEVICE_NAME_IN_PARAM;
+        goto failed;
+    }
+
+    // device does exist?
+    index = get_device_index(device, device_name);
+    if(index == -1)
+    {
+        ret_code = ERR_NO_DEVICE_IN_SYSTEM;
+        goto failed;
+    }
+
+    if(device[index].type != DEVICE_TYPE_WIFI)
+    {
+        ret_code = ERR_NOT_WIFI_DEVICE;
+        goto failed;
+    }
+    
+    wifi_device = (WiFi_device *)device[index].device;
+    if(wifi_device == NULL)
+    {
+        ret_code = ERR_LOAD_LIBRARY;
+        goto failed;
+    }
+    else
+    {
+        if(wifi_device->context == NULL)
+        {
+            ret_code = ERR_DEVICE_NOT_OPENNED;
+            goto failed;
+        }
+    }
+
+    if(device[index].status != DEVICE_STATUS_LINK)
+    {
+        ret_code = ERR_DEVICE_NOT_CONNECT;
+        goto failed;
+    }
+
+    ret_code = wifi_device->wifi_device_Ops->get_cur_net_info(wifi_device->context, reply, reply_length);
+
+    memset(ret_string, 0, 4096);
+    sprintf(ret_string, "{\"data\":{");
+    if(ret_code == 0)
+    {
+        char * tempstart = NULL;
+        char * tempend = NULL;
+        char content[64];
+
+        // device name
+        sprintf(ret_string + strlen(ret_string), "\"device\":\"%s\",", device_name);
+
+        // bssid
+        memset(content, 0, 64);
+        tempstart = strstr(reply, "bssid=");
+        if(tempstart)
+        {
+            tempstart += strlen("bssid=");
+            tempend = strstr(tempstart, "\n");
+            if(tempend)
+                memcpy(content, tempstart, tempend - tempstart);
+        }
+        sprintf(ret_string + strlen(ret_string), "\"bssid\":\"%s\",", content);
+
+        // frenquency 
+        memset(content, 0, 64);
+        tempstart = strstr(tempend, "freq=");
+        if(tempstart)
+        {
+            tempstart += strlen("freq=");
+            tempend = strstr(tempstart, "\n");
+            if(tempend)
+                memcpy(content, tempstart, tempend - tempstart);
+        }
+        sprintf(ret_string + strlen(ret_string), "\"frenquency\":\"%s MHz\",", content);
+
+        // ssid
+        memset(content, 0, 64);
+        tempstart = strstr(tempend, "ssid=");
+        if(tempstart)
+        {
+            tempstart += strlen("ssid=");
+            tempend = strstr(tempstart, "\n");
+            if(tempend)
+                memcpy(content, tempstart, tempend - tempstart);
+        }
+        sprintf(ret_string + strlen(ret_string), "\"ssid\":\"%s\",", content);
+
+        // encryptionType
+        memset(content, 0, 64);
+        tempstart = strstr(tempend, "key_mgmt=");
+        if(tempstart)
+        {
+            tempstart += strlen("key_mgmt=");
+            tempend = strstr(tempstart, "\n");
+            if(tempend)
+                memcpy(content, tempstart, tempend - tempstart);
+        }
+        sprintf(ret_string + strlen(ret_string), "\"encryptionType\":\"%s\",", content);
+
+        // ip
+        memset(content, 0, 64);
+        tempstart = strstr(tempend, "ip_address=");
+        if(tempstart)
+        {
+            tempstart += strlen("ip_address=");
+            tempend = strstr(tempstart, "\n");
+            if(tempend)
+                memcpy(content, tempstart, tempend - tempstart);
+        }
+        sprintf(ret_string + strlen(ret_string), "\"ip\":\"%s\",", content);
+
+        // mac
+        memset(content, 0, 64);
+        tempstart = strstr(tempend, "address=");
+        if(tempstart)
+        {
+            tempstart += strlen("address=");
+            tempend = strstr(tempstart, "\n");
+            if(tempend)
+                memcpy(content, tempstart, tempend - tempstart);
+        }
+        sprintf(ret_string + strlen(ret_string), "\"mac\":\"%s\",", content);
+
+        // speed
+        sprintf(ret_string + strlen(ret_string), "\"speed\":\"%d Mbps\"", device[index].speed);
+
+        // gate way
+
+        // singal
+
+    }
+    sprintf(ret_string + strlen(ret_string), "},");
+
+failed:
+    if(jo)
+        json_object_put (jo);
+
+    sprintf(ret_string + strlen(ret_string), "\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
+
+    return ret_string;
 }
 
 void wifi_register(hibus_conn * hibus_context_inetd)

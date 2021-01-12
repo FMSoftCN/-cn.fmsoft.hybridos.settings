@@ -27,16 +27,24 @@
 #include "common.h"
 
 const char *op_errors[] = {
-    "success",
-    "can not get devices list.",
-    "wrong procedure name.",
-    "wrong Json format.",
-    "can not find device name in param.",
-    "can not find device in system.",
-    "device is not WiFi device.",
-    "can not get operation functions.",
-    "an error ocurs in open wifi device.",
-    "an error ocurs in close wifi device."
+    "success",                                  // ERR_NO
+    "an error ocures in library operation",     // ERR_LIBRARY_OPERATION
+    "can not get devices list.",                // ERR_NONE_DEVICE_LIST
+    "wrong procedure name.",                    // ERR_WRONG_PROCEDURE
+    "wrong Json format.",                       // ERR_WRONG_JSON
+    "can not find device name in param.",       // ERR_NO_DEVICE_NAME_IN_PARAM
+    "can not find device in system.",           // ERR_NO_DEVICE_IN_SYSTEM
+    "invalid network device type",              // ERR_DEVICE_TYPE
+    "some error in load library",               // ERR_LOAD_LIBRARY
+    "device is not WiFi device.",               // ERR_NOT_WIFI_DEVICE 
+    "device has not openned.",                  // ERR_DEVICE_NOT_OPENNED 
+    "an error ocurs in open wifi device.",      // ERR_OPEN_WIFI_DEVICE
+    "an error ocurs in close wifi device.",     // ERR_CLOSE_WIFI_DEVICE
+    "an error ocurs in open ethernet device.",  // ERR_OPEN_ETHERNET_DEVICE
+    "an error ocurs in close ethernet device.", // ERR_CLOSE_ETHERNET_DEVICE
+    "an error ocurs in open mobile device.",    // ERR_OPEN_MOBILE_DEVICE
+    "an error ocurs in close mobile device.",   // ERR_CLOSE_MOBILE_DEVICE
+    "device does not connect."                  // ERR_DEVICE_NOT_CONNECT
 };
 
 char * openDevice(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
@@ -94,41 +102,49 @@ char * openDevice(hibus_conn* conn, const char* from_endpoint, const char* to_me
         goto failed;
     }
 
-    if((device[index].status == DEVICE_STATUS_DOWN) || (device[index].status == DEVICE_STATUS_UNCERTAIN))
+    if(device[index].type == DEVICE_TYPE_WIFI)
     {
-        if(device[index].type == DEVICE_TYPE_WIFI)
+        // whether library has been loaded
+        wifi_device = (WiFi_device *)device[index].device;
+        if(wifi_device == NULL)
         {
-            wifi_device = (WiFi_device *)device[index].device;
-            if(wifi_device == NULL)
-            {
-                ret_code = ERR_NO_OPERATION_LIST;
-                goto failed;
-            }
-            else
+            ret_code = ERR_LOAD_LIBRARY;
+            goto failed;
+        }
+        else
+        {
+            // if the interface is down, up it now
+            if((device[index].status == DEVICE_STATUS_DOWN) || (device[index].status == DEVICE_STATUS_UNCERTAIN))
             {
                 ret_code = ERR_OPEN_WIFI_DEVICE;
                 if(ifconfig_helper(device_name, 1))
                     goto failed;
-                ret_code = wifi_device->wifi_device_Ops->open(device_name, &(wifi_device->context));
             }
-        }
-        else if(device[index].type == DEVICE_TYPE_ETHERNET)
-        {
-            ret_code = ERR_OPEN_ETHERNET_DEVICE;
-            if(ifconfig_helper(device_name, 1))
-                goto failed;
+
+            // if the device is not openned
             ret_code = ERR_NO;
+            if(wifi_device->context == NULL)
+                ret_code = wifi_device->wifi_device_Ops->open(device_name, &(wifi_device->context));
+
+            get_if_info(&device[index]);
         }
-        else if(device[index].type == DEVICE_TYPE_MOBILE)
-        {
-            ret_code = ERR_OPEN_MOBILE_DEVICE;
-            if(ifconfig_helper(device_name, 1))
-                goto failed;
-            ret_code = ERR_NO;
-        }
-        else
-            ret_code = ERR_INVALID_DEVICE; 
     }
+    else if(device[index].type == DEVICE_TYPE_ETHERNET)
+    {
+        ret_code = ERR_OPEN_ETHERNET_DEVICE;
+        if(ifconfig_helper(device_name, 1))
+            goto failed;
+        ret_code = ERR_NO;
+    }
+    else if(device[index].type == DEVICE_TYPE_MOBILE)
+    {
+        ret_code = ERR_OPEN_MOBILE_DEVICE;
+        if(ifconfig_helper(device_name, 1))
+            goto failed;
+        ret_code = ERR_NO;
+    }
+    else
+        ret_code = ERR_DEVICE_TYPE; 
 
 failed:
     if(jo)
@@ -190,46 +206,50 @@ char * closeDevice(hibus_conn* conn, const char* from_endpoint, const char* to_m
         goto failed;
     }
 
-    if((device[index].status != DEVICE_STATUS_DOWN) && (device[index].status != DEVICE_STATUS_UNCERTAIN))
+    if(device[index].type == DEVICE_TYPE_WIFI)
     {
-        if(device[index].type == DEVICE_TYPE_WIFI)
+        // whether library has been loaded
+        wifi_device = (WiFi_device *)device[index].device;
+        if(wifi_device == NULL)
         {
-            wifi_device = (WiFi_device *)device[index].device;
-            if(wifi_device == NULL)
-            {
-                ret_code = ERR_NO_OPERATION_LIST;
-                goto failed;
-            }
-            else
+            ret_code = ERR_LOAD_LIBRARY;
+            goto failed;
+        }
+        else
+        {
+            // if the interface is active
+            if((device[index].status == DEVICE_STATUS_LINK) || (device[index].status == DEVICE_STATUS_UNLINK))
             {
                 ret_code = ERR_CLOSE_WIFI_DEVICE;
                 if(ifconfig_helper(device_name, 0))
                     goto failed;
+            }
 
-                if(wifi_device->context)
-                {
-                    ret_code = wifi_device->wifi_device_Ops->close(wifi_device->context);
-                    wifi_device->context = NULL;
-                }
+            // if the device is openned
+            ret_code = ERR_NO;
+            if(wifi_device->context)
+            {
+                ret_code = wifi_device->wifi_device_Ops->close(wifi_device->context);
+                wifi_device->context = NULL;
             }
         }
-        else if(device[index].type == DEVICE_TYPE_ETHERNET)
-        {
-            ret_code = ERR_CLOSE_ETHERNET_DEVICE;
-            if(ifconfig_helper(device_name, 0))
-                goto failed;
-            ret_code = ERR_NO;
-        }
-        else if(device[index].type == DEVICE_TYPE_MOBILE)
-        {
-            ret_code = ERR_CLOSE_MOBILE_DEVICE;
-            if(ifconfig_helper(device_name, 0))
-                goto failed;
-            ret_code = ERR_NO;
-        }
-        else
-            ret_code = ERR_INVALID_DEVICE; 
     }
+    else if(device[index].type == DEVICE_TYPE_ETHERNET)
+    {
+        ret_code = ERR_CLOSE_ETHERNET_DEVICE;
+        if(ifconfig_helper(device_name, 0))
+            goto failed;
+        ret_code = ERR_NO;
+    }
+    else if(device[index].type == DEVICE_TYPE_MOBILE)
+    {
+        ret_code = ERR_CLOSE_MOBILE_DEVICE;
+        if(ifconfig_helper(device_name, 0))
+            goto failed;
+        ret_code = ERR_NO;
+    }
+    else
+        ret_code = ERR_DEVICE_TYPE; 
 
 failed:
     if(jo)
@@ -245,7 +265,6 @@ char * getNetworkDevicesStatus(hibus_conn* conn, const char* from_endpoint, cons
     int i = 0;
     int ret_code = 0;
     char * ret_string = malloc(4096);
-    WiFi_device * wifi_device = NULL;
     char * type = NULL;
     char * status = NULL;
     int first = true;

@@ -161,11 +161,6 @@ static int init_from_etc_file(network_device * device, int device_num)
                             GetIntValueFromEtcFile(config_path, config_item, "scan_time", &(wifi_device->scan_time));
                             if(wifi_device->scan_time == 0)
                                 wifi_device->scan_time = DEFAULT_SCAN_TIME;
-
-                            sprintf(config_path, "%s", INETD_CONFIG_FILE);
-                            GetIntValueFromEtcFile(config_path, config_item, "signal_time", &(wifi_device->signal_time));
-                            if(wifi_device->signal_time == 0)
-                                wifi_device->signal_time = DEFAULT_SIGNAL_TIME;
 #ifdef gengyue
                             sprintf(config_path, "%s", INETD_CONFIG_FILE);
                             if(GetValueFromEtcFile(config_path, config_item, "start", config_content, ETC_MAXLINE) == ETC_OK)
@@ -292,8 +287,21 @@ int main(void)
         ret_code = hibus_wait_and_dispatch_packet(hibus_context_inetd, 1000);
         if(ret_code)
             fprintf(stderr, "WIFI DAEMON: WiFi error for hibus_wait_and_dispatch_packet, %s.\n", hibus_get_err_message(ret_code));
-//        wifi_device_Ops->start_scan(context);
-//        wifi_device_Ops->get_signal_strength(context);
+#ifdef gengyue       
+        for(i = 0; i < device_num; i++)
+        {
+            if(device[i].type == DEVICE_TYPE_WIFI)
+            {
+                WiFi_device * wifi_device = device[i].device;
+                if(wifi_device && wifi_device->context != NULL)
+                {
+                    char reply[4096];
+                    memset(reply, 0, 4096);
+                    ret_code = wifi_device->wifi_device_Ops->get_cur_net_info(wifi_device->context, reply, 4096);
+                }
+            }
+        }
+#endif
     }
 
     // step 6: free the resource

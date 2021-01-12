@@ -1066,33 +1066,33 @@ end:
 
 static int aw_wifi_connect_ap(const char *ssid, const char *passwd, int event_label)
 {
-	  int  ret = 0;
-	  int  key[4] = {0};
-	  tWIFI_MACHINE_STATE  state;
-      const char *p_ssid = NULL;
+    int  ret = 0;
+    int  key[4] = {0};
+    tWIFI_MACHINE_STATE  state;
+    const char *p_ssid = NULL;
 
     if(gwifi_state == WIFIMG_WIFI_DISABLED){
         printf("aw wifi connect ap wifi disabled\n");
         return -1;
     }
 
-	  if(!ssid || !ssid[0]){
-	      printf("Error: ssid is NULL!\n");
-	      ret = -1;
-	      event_code = WIFIMG_CMD_OR_PARAMS_ERROR;
-	      goto end;
-	  }
+    if(!ssid || !ssid[0]){
+        printf("Error: ssid is NULL!\n");
+        ret = -1;
+        event_code = WIFIMG_CMD_OR_PARAMS_ERROR;
+        goto end;
+    }
 
-	  state = get_wifi_machine_state();
-          printf("aw wifi connect state 0x%x\n", state);
-	  if(state != CONNECTED_STATE && state != DISCONNECTED_STATE){
+    state = get_wifi_machine_state();
+    printf("aw wifi connect state 0x%x\n", state);
+    if(state != CONNECTED_STATE && state != DISCONNECTED_STATE){
         ret = -1;
         printf("aw wifi connect ap dev busing\n");
         event_code = WIFIMG_DEV_BUSING_EVENT;
         goto end;
     }
 
-     /* convert app ssid to wpa scan ssid */
+    /* convert app ssid to wpa scan ssid */
     ret = ssid_app_to_wpa_scan(ssid, wpa_scan_ssid);
     if(ret < 0){
         ret = -1;
@@ -1112,11 +1112,11 @@ static int aw_wifi_connect_ap(const char *ssid, const char *passwd, int event_la
         p_ssid = wpa_conf_ssid;
     }
 
-	  /* checking network exist at first time */
-	  get_key_mgmt(wpa_scan_ssid, key);
+    /* checking network exist at first time */
+    get_key_mgmt(wpa_scan_ssid, key);
 
-	  /* no password */
-	  if(!passwd || !passwd[0]){
+    /* no password */
+    if(!passwd || !passwd[0]){
         if(key[0] == 0){
             update_scan_results();
             get_key_mgmt(wpa_scan_ssid, key);
@@ -1131,7 +1131,7 @@ static int aw_wifi_connect_ap(const char *ssid, const char *passwd, int event_la
         pause_wifi_scan_thread();
 
         ret = wifi_connect_ap_inner(p_ssid, WIFIMG_NONE, passwd, event_label);
-	  }else{
+    }else{
         if((key[1] == 0) && (key[2] == 0)){
             update_scan_results();
             get_key_mgmt(wpa_scan_ssid, key);
@@ -1148,18 +1148,18 @@ static int aw_wifi_connect_ap(const char *ssid, const char *passwd, int event_la
         /* wpa-psk */
         if(key[1] == 1){
             /* try WPA-PSK */
-	          ret = wifi_connect_ap_inner(p_ssid, WIFIMG_WPA_PSK, passwd, event_label);
+            ret = wifi_connect_ap_inner(p_ssid, WIFIMG_WPA_PSK, passwd, event_label);
             if(ret == 0){
                 goto end;
             }
         }
 
-			/* wep */
-			if(key[2] == 1){
-			    /* try WEP */
-                ret = wifi_connect_ap_inner(p_ssid, WIFIMG_WEP, passwd, event_label);
-			}
-	  }
+        /* wep */
+        if(key[2] == 1){
+            /* try WEP */
+            ret = wifi_connect_ap_inner(p_ssid, WIFIMG_WEP, passwd, event_label);
+        }
+    }
 
 end:
     if(ret != 0){
@@ -1599,6 +1599,62 @@ static int aw_set_scan_interval(int interval)
     return 0;
 }
 
+int aw_wifi_get_wifi_state()
+{
+    int ret = -1, len = 0;
+    char ssid[64] = {0};
+    tWIFI_MACHINE_STATE machine_state;
+    int tmp_state;
+
+    /* wpa_supplicant already running not by self process */
+    if(gwifi_state == WIFIMG_WIFI_DISABLED){
+	  /* check wifi already on by self process or other process */
+        ret = wifi_connect_to_supplicant();
+        if(ret){
+            printf("WiFi not on\n");
+            return WIFIMG_WIFI_DISABLED;
+        }
+
+	  /* sync wifi state by wpa_supplicant */
+	len = sizeof(ssid);
+	ret = wpa_conf_is_ap_connected(ssid, &len);
+        if(ret >= 4){
+            tmp_state = WIFIMG_WIFI_CONNECTED;
+        }else{
+            tmp_state = WIFIMG_WIFI_DISCONNECTED;
+        }
+
+        /*close connect */
+        wifi_close_supplicant_connection();
+        return tmp_state;
+    }
+
+    machine_state = get_wifi_machine_state();
+    if(machine_state == DISCONNECTED_STATE){
+        gwifi_state = WIFIMG_WIFI_DISCONNECTED;
+    }else if(machine_state == CONNECTING_STATE
+        || machine_state == DISCONNECTING_STATE
+        || machine_state == L2CONNECTED_STATE){
+        gwifi_state = WIFIMG_WIFI_BUSING;
+    }else if(machine_state == CONNECTED_STATE){
+        gwifi_state = WIFIMG_WIFI_CONNECTED;
+    }
+
+    return gwifi_state;
+}
+
+static int aw_wifi_get_wifi_info(char * reply, int reply_length)
+{
+    int  ret_code = 0;
+    char cmd[CMD_LEN + 1] = {0};
+
+	strncpy(cmd, "STATUS", CMD_LEN);
+	cmd[CMD_LEN] = '\0';
+	ret_code = wifi_command(cmd, reply, reply_length);
+
+    return ret_code;
+}
+
 static const aw_wifi_interface_t aw_wifi_interface = {
     aw_wifi_add_event_callback,
     aw_wifi_is_ap_connected,
@@ -1614,7 +1670,9 @@ static const aw_wifi_interface_t aw_wifi_interface = {
     aw_wifi_remove_all_networks,
     aw_wifi_list_networks,
     aw_wifi_get_netid,
-    aw_set_scan_interval
+    aw_set_scan_interval,
+    aw_wifi_get_wifi_state,
+    aw_wifi_get_wifi_info
 };
 
 const aw_wifi_interface_t * aw_wifi_on(tWifi_event_callback pcb, int event_label, const char * path)
@@ -1712,46 +1770,3 @@ int aw_wifi_off(const aw_wifi_interface_t *p_wifi_interface)
     return 0;
 }
 
-int aw_wifi_get_wifi_state()
-{
-    int ret = -1, len = 0;
-    char ssid[64] = {0};
-    tWIFI_MACHINE_STATE machine_state;
-    int tmp_state;
-
-    /* wpa_supplicant already running not by self process */
-    if(gwifi_state == WIFIMG_WIFI_DISABLED){
-	  /* check wifi already on by self process or other process */
-        ret = wifi_connect_to_supplicant();
-        if(ret){
-            printf("WiFi not on\n");
-            return WIFIMG_WIFI_DISABLED;
-        }
-
-	  /* sync wifi state by wpa_supplicant */
-	len = sizeof(ssid);
-	ret = wpa_conf_is_ap_connected(ssid, &len);
-        if(ret >= 4){
-            tmp_state = WIFIMG_WIFI_CONNECTED;
-        }else{
-            tmp_state = WIFIMG_WIFI_DISCONNECTED;
-        }
-
-        /*close connect */
-        wifi_close_supplicant_connection();
-        return tmp_state;
-    }
-
-    machine_state = get_wifi_machine_state();
-    if(machine_state == DISCONNECTED_STATE){
-        gwifi_state = WIFIMG_WIFI_DISCONNECTED;
-    }else if(machine_state == CONNECTING_STATE
-        || machine_state == DISCONNECTING_STATE
-        || machine_state == L2CONNECTED_STATE){
-        gwifi_state = WIFIMG_WIFI_BUSING;
-    }else if(machine_state == CONNECTED_STATE){
-        gwifi_state = WIFIMG_WIFI_CONNECTED;
-    }
-
-    return gwifi_state;
-}

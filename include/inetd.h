@@ -34,6 +34,7 @@ typedef struct _hiWiFiDeviceOps
     int (* start_scan) (wifi_context * context);
     int (* stop_scan) (wifi_context * context);
     unsigned int (* get_hotspots) (wifi_context * context, wifi_hotspot ** hotspots);
+    int (*get_cur_net_info)(wifi_context * context, char * reply, int reply_length);
 } hiWiFiDeviceOps;
 
 // method for WiFi
@@ -85,25 +86,27 @@ typedef struct _hiWiFiDeviceOps
 #define DEVICE_STATUS_UNLINK            4
 
 // for time period
-#define DEFAULT_SCAN_TIME               120
-#define DEFAULT_SIGNAL_TIME             30
+#define DEFAULT_SCAN_TIME               30
 
 // for error
 #define ERR_NO                          0
-#define ERR_NONE_DEVICE_LIST            -1
-#define ERR_WRONG_PROCEDURE             -2
-#define ERR_WRONG_JSON                  -3
-#define ERR_NO_DEVICE_NAME_IN_PARAM     -4
-#define ERR_NO_DEVICE_IN_SYSTEM         -5
-#define ERR_INVALID_DEVICE              -6
-#define ERR_NO_OPERATION_LIST           -7
-#define ERR_NOT_WIFI_DEVICE             -8
-#define ERR_OPEN_WIFI_DEVICE            -9
-#define ERR_CLOSE_WIFI_DEVICE           -10
-#define ERR_OPEN_ETHERNET_DEVICE        -11
-#define ERR_CLOSE_ETHERNET_DEVICE       -12
-#define ERR_OPEN_MOBILE_DEVICE          -13
-#define ERR_CLOSE_MOBILE_DEVICE         -14
+#define ERR_LIBRARY_OPERATION           -1
+#define ERR_NONE_DEVICE_LIST            -2
+#define ERR_WRONG_PROCEDURE             -3
+#define ERR_WRONG_JSON                  -4
+#define ERR_NO_DEVICE_NAME_IN_PARAM     -5
+#define ERR_NO_DEVICE_IN_SYSTEM         -6
+#define ERR_DEVICE_TYPE                 -7
+#define ERR_LOAD_LIBRARY                -8
+#define ERR_NOT_WIFI_DEVICE             -9
+#define ERR_DEVICE_NOT_OPENNED          -10
+#define ERR_OPEN_WIFI_DEVICE            -11
+#define ERR_CLOSE_WIFI_DEVICE           -12
+#define ERR_OPEN_ETHERNET_DEVICE        -13
+#define ERR_CLOSE_ETHERNET_DEVICE       -14
+#define ERR_OPEN_MOBILE_DEVICE          -15
+#define ERR_CLOSE_MOBILE_DEVICE         -16
+#define ERR_DEVICE_NOT_CONNECT          -17
 
 // for network changed
 #define NETWORK_CHANGED_NAME            ((0x01) << 0)
@@ -114,13 +117,12 @@ typedef struct _hiWiFiDeviceOps
 #define NETWORK_CHANGED_BROADCAST       ((0x01) << 5)
 #define NETWORK_CHANGED_SUBNETMASK      ((0x01) << 6)
 
-
 typedef struct _WiFi_device
 {
     hiWiFiDeviceOps * wifi_device_Ops;
     wifi_context * context;
     int scan_time;
-    int signal_time;
+    int signal;
 } WiFi_device;
 
 #define NETWORK_DEVICE_NAME_LENGTH  32
@@ -137,6 +139,7 @@ typedef struct _network_device
     char ip[NETWORK_ADDRESS_LENGTH];
     char broadAddr[NETWORK_ADDRESS_LENGTH];
     char subnetMask[NETWORK_ADDRESS_LENGTH];
+    int speed;
 } network_device;
 
 
