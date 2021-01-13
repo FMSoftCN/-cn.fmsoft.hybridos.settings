@@ -35,6 +35,7 @@ typedef struct _hiWiFiDeviceOps
     int (* stop_scan) (wifi_context * context);
     unsigned int (* get_hotspots) (wifi_context * context, wifi_hotspot ** hotspots);
     int (*get_cur_net_info)(wifi_context * context, char * reply, int reply_length);
+    int (*set_scan_interval)(wifi_context * context, int interval);
 } hiWiFiDeviceOps;
 
 // method for WiFi

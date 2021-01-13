@@ -389,6 +389,17 @@ static int get_cur_net_info(wifi_context * context, char * reply, int reply_leng
     return ret_code;
 }
 
+static int set_scan_interval(wifi_context * context, int scan_interval)
+{
+    unsigned int ret_code = 0;
+
+    if(context == NULL)
+        return -1;
+
+    ret_code = context->p_wifi_interface->set_scan_interval(scan_interval);
+    return ret_code;
+}
+
 
 // initialize device.
 hiWiFiDeviceOps * __wifi_device_ops_get(void)
@@ -403,5 +414,6 @@ hiWiFiDeviceOps * __wifi_device_ops_get(void)
     wifiOps.start_scan = start_scan;
     wifiOps.get_hotspots = get_hotspots;
     wifiOps.get_cur_net_info = get_cur_net_info;
+    wifiOps.set_scan_interval = set_scan_interval;
     return &wifiOps;
 }

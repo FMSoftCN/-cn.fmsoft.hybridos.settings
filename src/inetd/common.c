@@ -125,8 +125,11 @@ char * openDevice(hibus_conn* conn, const char* from_endpoint, const char* to_me
             ret_code = ERR_NO;
             if(wifi_device->context == NULL)
                 ret_code = wifi_device->wifi_device_Ops->open(device_name, &(wifi_device->context));
+            if(ret_code != 0)
+                goto failed;
 
             get_if_info(&device[index]);
+            wifi_device->wifi_device_Ops->set_scan_interval(wifi_device->context, wifi_device->scan_time);
         }
     }
     else if(device[index].type == DEVICE_TYPE_ETHERNET)
