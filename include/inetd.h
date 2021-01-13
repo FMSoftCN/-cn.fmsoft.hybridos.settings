@@ -13,7 +13,7 @@ struct _wifi_context
 };
 typedef struct _wifi_context wifi_context;
 
-#define HOTSPOT_STRING_LENGTH 40
+#define HOTSPOT_STRING_LENGTH 64 
 typedef struct _wifi_hotspot
 {
     char bssid[HOTSPOT_STRING_LENGTH];
@@ -22,6 +22,7 @@ typedef struct _wifi_hotspot
     char capabilities[HOTSPOT_STRING_LENGTH];
     int  signal_strength;
     bool isConnect;
+    struct _wifi_hotspot * next;
 } wifi_hotspot;
 
 typedef struct _hiWiFiDeviceOps
@@ -118,16 +119,20 @@ typedef struct _hiWiFiDeviceOps
 #define NETWORK_CHANGED_BROADCAST       ((0x01) << 5)
 #define NETWORK_CHANGED_SUBNETMASK      ((0x01) << 6)
 
+#define NETWORK_DEVICE_NAME_LENGTH  32
+#define NETWORK_ADDRESS_LENGTH      32
+#define WIFI_SSID_LENGTH            32
+
 typedef struct _WiFi_device
 {
     hiWiFiDeviceOps * wifi_device_Ops;
     wifi_context * context;
     int scan_time;
     int signal;
+    char ssid[WIFI_SSID_LENGTH];
+    wifi_hotspot *first_hotspot;
 } WiFi_device;
 
-#define NETWORK_DEVICE_NAME_LENGTH  32
-#define NETWORK_ADDRESS_LENGTH      32
 typedef struct _network_device
 {
     char ifname[NETWORK_DEVICE_NAME_LENGTH];

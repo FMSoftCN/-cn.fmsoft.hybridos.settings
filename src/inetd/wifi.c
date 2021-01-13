@@ -114,17 +114,25 @@ char * wifiStartScanHotspots(hibus_conn* conn, const char* from_endpoint, const 
 
     ret_code = wifi_device->wifi_device_Ops->start_scan(wifi_device->context);
 
+    wifi_device->wifi_device_Ops->get_hotspots(wifi_device->context, &(wifi_device->first_hotspot));
+{
+    wifi_hotspot * spot = wifi_device->first_hotspot;
+    while(spot)
+    {
+        printf("========== %s, %s, %d\n", spot->bssid, spot->ssid, spot->signal_strength);
+        spot = spot->next;
+    }
+}
+
 failed:
     if(jo)
         json_object_put (jo);
+
 
     memset(ret_string, 0, 4096);
     sprintf(ret_string, "{\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
     return ret_string;
 
-#ifdef gengyue
-    wifi_device_Ops->get_hotspots(context, NULL);
-#endif
 }
 
 char * wifiStopScanHotspots(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)

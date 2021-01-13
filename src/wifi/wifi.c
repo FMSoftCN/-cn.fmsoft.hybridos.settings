@@ -338,7 +338,6 @@ static int disconnect(wifi_context * context)
 static int get_signal_strength(wifi_context * context)
 {
     int ret_code = 0;
-printf("======================================================= wifi: get_signal_strength.\n");
     return ret_code;
 }
 
@@ -370,10 +369,71 @@ static unsigned int get_hotspots(wifi_context * context, wifi_hotspot ** hotspot
     unsigned int ret_code = 0;
     int len = 4096;
     char results[4096];
+    char content[16];
 
     memset(results, 0, 4096);
     ret_code = context->p_wifi_interface->get_scan_results(results, &len);
-    printf("%s\n", results);
+
+    if(ret_code == 0)
+    {
+        char * tempstart = NULL;
+        char * tempend = NULL;
+
+        wifi_hotspot * node = malloc(sizeof(wifi_hotspot)); 
+        memset(node, 0, sizeof(wifi_hotspot));
+        * hotspots = node;
+
+        tempstart = results;
+        tempend = strstr(tempstart, "\n");
+
+        // if has some hot spots
+        while(tempend)
+        {
+            tempstart = tempend + 1;
+
+            tempend = strstr(tempstart, "\t");
+            if(tempend)
+                memcpy(node->bssid, tempstart, tempend - tempstart);
+            else
+                break;
+
+            tempstart = tempend + 1;
+            tempend = strstr(tempstart, "\t");
+            if(tempend)
+                memcpy(node->frenquency, tempstart, tempend - tempstart);
+
+            tempstart = tempend + 1;
+            memset(content, 0, 16);
+            tempend = strstr(tempstart, "\t");
+            if(tempend)
+            {
+                memcpy(content, tempstart, tempend - tempstart);
+                node->signal_strength = 100 + atoi(content);
+            }
+
+            tempstart = tempend + 1;
+            tempend = strstr(tempstart, "\t");
+            if(tempend)
+                memcpy(node->capabilities, tempstart, tempend - tempstart);
+
+            tempstart = tempend + 1;
+            tempend = strstr(tempstart, "\n");
+            if(tempend)
+                memcpy(node->ssid, tempstart, tempend - tempstart);
+            else
+            {
+                memcpy(node->ssid, tempstart, strlen(tempstart));
+                node->next = malloc(sizeof(wifi_hotspot));
+                node = node->next;
+                memset(node, 0, sizeof(wifi_hotspot));
+                break;
+            }
+
+            node->next = malloc(sizeof(wifi_hotspot));
+            node = node->next;
+            memset(node, 0, sizeof(wifi_hotspot));
+        }
+    }
     return ret_code;
 }
 

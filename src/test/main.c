@@ -62,9 +62,9 @@ int main(void)
     ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_OPEN_DEVICE, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
 //    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_CLOSE_DEVICE, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
 //    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_GET_DEVICES_STATUS, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
-//    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_START_SCAN, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
+    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_START_SCAN, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
 //    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_CONNECT_AP, "{\"device\":\"wlp5s0\", \"ssid\":\"bearvilla\", \"password\":\"littlebeargyq\"}", 1000, wifi_scan_handler);
-    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_GET_NETWORK_INFO, "{\"device\":\"wlp5s0\", \"ssid\":\"bearvilla\", \"password\":\"littlebeargyq\"}", 1000, wifi_scan_handler);
+//    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_GET_NETWORK_INFO, "{\"device\":\"wlp5s0\", \"ssid\":\"bearvilla\", \"password\":\"littlebeargyq\"}", 1000, wifi_scan_handler);
     ret_code ++;
     hibus_subscribe_event(hibus_context, endpoint, WIFISIGNALSTRENGTHCHANGED, wifi_signal_handler);
 
