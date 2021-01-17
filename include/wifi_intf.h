@@ -66,7 +66,16 @@ typedef struct{
     int (*wifi_get_wifi_info)(char * reply, int reply_length);
 }aw_wifi_interface_t;
 
-const aw_wifi_interface_t * aw_wifi_on(tWifi_event_callback pcb, int event_label, const char * socket_path);
+#define NETWORK_DEVICE_NAME_LENGTH  32
+typedef void (* get_wifi_info)(char * device_name, char * information);
+typedef struct _wifi_callback
+{
+    char device_name[NETWORK_DEVICE_NAME_LENGTH];
+    get_wifi_info info_callback;
+
+} wifi_callback;
+
+const aw_wifi_interface_t * aw_wifi_on(tWifi_event_callback pcb, int event_label, const char * socket_path, wifi_callback * callback);
 int aw_wifi_get_wifi_state();
 int aw_wifi_off(const aw_wifi_interface_t *p_wifi_interface_t);
 

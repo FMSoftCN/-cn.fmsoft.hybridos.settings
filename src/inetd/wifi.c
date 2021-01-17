@@ -114,16 +114,6 @@ char * wifiStartScanHotspots(hibus_conn* conn, const char* from_endpoint, const 
 
     ret_code = wifi_device->wifi_device_Ops->start_scan(wifi_device->context);
 
-    wifi_device->wifi_device_Ops->get_hotspots(wifi_device->context, &(wifi_device->first_hotspot));
-{
-    wifi_hotspot * spot = wifi_device->first_hotspot;
-    while(spot)
-    {
-        printf("========== %s, %s, %d\n", spot->bssid, spot->ssid, spot->signal_strength);
-        spot = spot->next;
-    }
-}
-
 failed:
     if(jo)
         json_object_put (jo);
@@ -432,6 +422,21 @@ char * wifiDisconnect(hibus_conn* conn, const char* from_endpoint, const char* t
     if((device[index].status != DEVICE_STATUS_DOWN) && (device[index].status != DEVICE_STATUS_UNCERTAIN))
         ret_code = wifi_device->wifi_device_Ops->disconnect(wifi_device->context);
 
+    // remove hot spots list
+    wifi_hotspot * node = NULL;
+    wifi_hotspot * tempnode = NULL;
+
+    pthread_mutex_lock(&(wifi_device->list_mutex));
+    node = wifi_device->first_hotspot;
+    while(node)
+    {
+        tempnode = node->next;
+        free(node);
+        node = tempnode;
+    }
+    wifi_device->first_hotspot = NULL;
+    pthread_mutex_unlock(&(wifi_device->list_mutex));
+
 failed:
     if(jo)
         json_object_put (jo);
@@ -627,6 +632,63 @@ failed:
     sprintf(ret_string + strlen(ret_string), "\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
 
     return ret_string;
+}
+
+void report_wifi_scan_info(network_device * device, wifi_hotspot * hotspots, int number)
+{
+    wifi_hotspot * node = NULL;
+    wifi_hotspot * tempnode = NULL;
+    wifi_hotspot nodecopy;
+    wifi_hotspot * nodecopynext = NULL;
+    WiFi_device * wifi_device = NULL;
+
+
+    if(device == NULL)
+        return;
+
+    // according to signal strength, order the list
+    if(number > 1)
+    {
+        int i = 1;
+        int j = i + 1;
+        node = hotspots;
+
+        for(i = 1; i < number - 1; i++)
+        {
+            node = node->next;
+            tempnode = node->next;
+            for(j = i + 1; j < number; j++)
+            {
+                if(node->signal_strength < tempnode->signal_strength)
+                {
+                    nodecopynext = node->next;
+                    node->next = tempnode->next;
+                    tempnode->next = nodecopynext;
+
+                    memcpy(&nodecopy, node, sizeof(wifi_hotspot));
+                    memcpy(node, tempnode, sizeof(wifi_hotspot));
+                    memcpy(tempnode, &nodecopy, sizeof(wifi_hotspot));
+                }
+                tempnode = tempnode->next;
+            }
+        }
+    }
+    
+    wifi_device = (WiFi_device *)(device->device);
+
+    // set hotspots list
+    pthread_mutex_lock(&(wifi_device->list_mutex));
+    node = wifi_device->first_hotspot;
+    while(node)
+    {
+        tempnode = node->next;
+        free(node);
+        node = tempnode;
+    }
+    wifi_device->first_hotspot = hotspots;
+    pthread_mutex_unlock(&(wifi_device->list_mutex));
+
+    // send the message
 }
 
 void wifi_register(hibus_conn * hibus_context_inetd)

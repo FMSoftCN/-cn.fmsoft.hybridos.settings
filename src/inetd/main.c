@@ -32,6 +32,8 @@
 #undef  DAEMON
 //#define DAEMON
 
+extern void report_wifi_scan_info(network_device * device_name, wifi_hotspot * hotspots, int number);
+
 static int load_device_library(network_device * device, int device_index, char * lib_name)
 {
     char library_path[MAX_PATH];
@@ -70,11 +72,15 @@ static int load_device_library(network_device * device, int device_index, char *
 
         if(wifi_device_Ops)
         {
+            wifi_device_Ops->report_wifi_scan_info = report_wifi_scan_info;
+            wifi_device_Ops->device = &device[device_index];
+
             WiFi_device * wifi_device = malloc(sizeof(WiFi_device));
             if(wifi_device)
             {
                 memset(wifi_device, 0, sizeof(WiFi_device));
                 wifi_device->wifi_device_Ops = wifi_device_Ops;
+                pthread_mutex_init(&wifi_device->list_mutex, NULL);
                 device[device_index].device = (void *)wifi_device;
                 device[device_index].lib_handle = library_handle;
             }

@@ -201,6 +201,9 @@ void *wifi_scan_thread(void *args)
     char cmd[16] = {0}, reply[16] = {0};
     struct timeval now;
     struct timespec outtime;
+    wifi_callback callback_func;
+
+    memcpy(&callback_func, (wifi_callback *)args, sizeof(wifi_callback));
 
     while(scan_running){
         pthread_mutex_lock(&scan_mutex);
@@ -245,6 +248,9 @@ void *wifi_scan_thread(void *args)
             //printf("scan results len2 %d\n", scan_results_len);
             //printf("scan results2\n");
             //printf("%s\n", scan_results);
+
+            if(callback_func.info_callback)
+                callback_func.info_callback(callback_func.device_name, scan_results);
         }
         pthread_mutex_unlock(&scan_mutex);
 

@@ -1675,7 +1675,7 @@ static const aw_wifi_interface_t aw_wifi_interface = {
     aw_wifi_get_wifi_info
 };
 
-const aw_wifi_interface_t * aw_wifi_on(tWifi_event_callback pcb, int event_label, const char * path)
+const aw_wifi_interface_t * aw_wifi_on(tWifi_event_callback pcb, int event_label, const char * path, wifi_callback * callback)
 {
     int i = 0, ret = -1;
 
@@ -1739,7 +1739,7 @@ const aw_wifi_interface_t * aw_wifi_on(tWifi_event_callback pcb, int event_label
     }
 #endif
 
-    start_wifi_scan_thread(NULL);
+    start_wifi_scan_thread(callback);
 
 #ifdef gengyue
     if(ret != 0){

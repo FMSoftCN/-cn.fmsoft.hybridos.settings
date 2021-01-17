@@ -9,15 +9,10 @@
 #include <dirent.h>
 #include <hibus.h>
 
+#include "wifi_intf.h"
 #include "inetd.h"
 
 #define CONFIG_CTRL_IFACE_DIR "/var/run/wpa_supplicant"
-
-//struct _wifi_context
-//{
-//    const aw_wifi_interface_t * p_wifi_interface;
-//    int event_label;
-//};
 
 static hiWiFiDeviceOps wifiOps;
 
@@ -240,11 +235,86 @@ int main(int argv, char *argc[])
 #endif
 
 
+static void get_wifimanager_info(char * device, char * results)
+{
+    int number = 0;
+    if(results && strlen(results) != 0)
+    {
+        char content[16];
+        char * tempstart = NULL;
+        char * tempend = NULL;
+        wifi_hotspot * firstnode = NULL;
+
+        wifi_hotspot * node = malloc(sizeof(wifi_hotspot)); 
+        memset(node, 0, sizeof(wifi_hotspot));
+        firstnode = node;
+
+        tempstart = results;
+        tempend = strstr(tempstart, "\n");
+
+        // if has some hot spots
+        while(tempend)
+        {
+            tempstart = tempend + 1;
+
+            tempend = strstr(tempstart, "\t");
+            if(tempend)
+                memcpy(node->bssid, tempstart, tempend - tempstart);
+            else
+                break;
+
+            tempstart = tempend + 1;
+            tempend = strstr(tempstart, "\t");
+            if(tempend)
+                memcpy(node->frenquency, tempstart, tempend - tempstart);
+
+            tempstart = tempend + 1;
+            memset(content, 0, 16);
+            tempend = strstr(tempstart, "\t");
+            if(tempend)
+            {
+                memcpy(content, tempstart, tempend - tempstart);
+                node->signal_strength = 100 + atoi(content);
+            }
+
+            tempstart = tempend + 1;
+            tempend = strstr(tempstart, "\t");
+            if(tempend)
+                memcpy(node->capabilities, tempstart, tempend - tempstart);
+
+            tempstart = tempend + 1;
+            tempend = strstr(tempstart, "\n");
+            if(tempend)
+                memcpy(node->ssid, tempstart, tempend - tempstart);
+            else
+            {
+                memcpy(node->ssid, tempstart, strlen(tempstart));
+                number ++;
+                break;
+            }
+
+            number ++;
+            node->next = malloc(sizeof(wifi_hotspot));
+            node = node->next;
+            memset(node, 0, sizeof(wifi_hotspot));
+        }
+
+        if(number == 0)
+        {
+            free(firstnode);
+            firstnode = NULL;
+        }
+
+        wifiOps.report_wifi_scan_info(wifiOps.device, firstnode, number);
+    }
+}
+
 static int open_device(const char * device_name, wifi_context ** context)
 {
     wifi_context * con = NULL;
     char * ctrl_ifname = NULL;
     char results[256];
+    wifi_callback callback;
 
     memset(results, 0, 256);
     if(device_name == NULL)
@@ -268,8 +338,12 @@ static int open_device(const char * device_name, wifi_context ** context)
     memset(con, 0, sizeof(wifi_context));
     * context = con;
 
+    memset(&callback ,0, sizeof(callback));
+    memcpy(callback.device_name, device_name, strlen(device_name));
+    callback.info_callback = get_wifimanager_info;
+
     con->event_label = rand();
-    con->p_wifi_interface = aw_wifi_on(wifi_event_handle, con->event_label, results);
+    con->p_wifi_interface = aw_wifi_on(wifi_event_handle, con->event_label, results, &callback);
     if(con->p_wifi_interface == NULL)
     {
         free(con);
@@ -475,5 +549,6 @@ hiWiFiDeviceOps * __wifi_device_ops_get(void)
     wifiOps.get_hotspots = get_hotspots;
     wifiOps.get_cur_net_info = get_cur_net_info;
     wifiOps.set_scan_interval = set_scan_interval;
+    wifiOps.report_wifi_scan_info = NULL;
     return &wifiOps;
 }
