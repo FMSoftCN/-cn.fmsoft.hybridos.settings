@@ -33,6 +33,7 @@
 //#define DAEMON
 
 extern void report_wifi_scan_info(network_device * device_name, wifi_hotspot * hotspots, int number);
+hibus_conn * hibus_context_inetd = NULL;
 
 static int load_device_library(network_device * device, int device_index, char * lib_name)
 {
@@ -217,7 +218,6 @@ int main(void)
 
     // for hibus
     int fd_hibus_inetd = -1;
-    hibus_conn * hibus_context_inetd = NULL;
     int ret_code = 0;
 
 #ifdef	DAEMON

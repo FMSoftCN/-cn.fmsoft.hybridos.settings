@@ -34,7 +34,7 @@ typedef struct _wifi_hotspot
 #define METHOD_WIFI_STOP_SCAN           "wifiStopScanHotspots"
 #define METHOD_WIFI_CONNECT_AP          "wifiConnect"
 #define METHOD_WIFI_DISCONNECT_AP       "wifiDisconnect"
-#define METHOD_WIFI_GET_NETWORK_INFO    "wifiGetNetworkInfo"
+#define METHOD_WIFI_GET_DEVICE_STATUS   "wifiGetDeviceStatus"
 
 // event for WiFi
 #define NETWORKDEVICECHANGED            "NETWORKDEVICECHANGED"
@@ -119,6 +119,7 @@ typedef struct _WiFi_device
     char ssid[WIFI_SSID_LENGTH];
     pthread_mutex_t list_mutex;             // wifi列表读写同步
     wifi_hotspot *first_hotspot;            // 扫描wifi列表
+    bool start_scan;                        // 是否正在扫描
 } WiFi_device;
 
 typedef struct _network_device

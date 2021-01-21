@@ -27,6 +27,7 @@
 #include "wifi.h"
 
 extern const char *op_errors[];
+extern hibus_conn * hibus_context_inetd;
 
 char * wifiStartScanHotspots(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
 {
@@ -35,8 +36,11 @@ char * wifiStartScanHotspots(hibus_conn* conn, const char* from_endpoint, const 
     const char * device_name = NULL;
     int index = -1;
     int ret_code = ERR_NO;
-    char * ret_string = malloc(4096);
+    char * ret_string = malloc(8192);
     WiFi_device * wifi_device = NULL;
+
+    memset(ret_string, 0, 8192);
+    sprintf(ret_string, "{\"data\":[");
 
     // get device array
     network_device * device = hibus_conn_get_user_data(conn);
@@ -112,15 +116,36 @@ char * wifiStartScanHotspots(hibus_conn* conn, const char* from_endpoint, const 
             goto failed;
     }
 
+    wifi_device->start_scan = true;
     ret_code = wifi_device->wifi_device_Ops->start_scan(wifi_device->context);
+    if(ret_code)
+        wifi_device->start_scan = false;
 
 failed:
     if(jo)
         json_object_put (jo);
 
+    pthread_mutex_lock(&(wifi_device->list_mutex));
+    wifi_hotspot * node = wifi_device->first_hotspot;
+    while(node)
+    {
+        if(node != wifi_device->first_hotspot)
+            sprintf(ret_string + strlen(ret_string), ",");
+        sprintf(ret_string + strlen(ret_string), 
+                "{"
+                "\"bssid\":\"%s\","
+                "\"ssid\":\"%s\","
+                "\"frequency\":\"%s\","
+                "\"capabilities\":\"%s\","
+                "\"signalStrength\":%d"
+                "}",
+                node->bssid, node->ssid, node->frenquency, node->capabilities, node->signal_strength);
 
-    memset(ret_string, 0, 4096);
-    sprintf(ret_string, "{\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
+printf("======= string length is %d\n", strlen(ret_string));
+        node = node->next;
+    }
+    pthread_mutex_unlock(&(wifi_device->list_mutex));
+    sprintf(ret_string + strlen(ret_string), "],\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
     return ret_string;
 
 }
@@ -334,6 +359,11 @@ char * wifiConnect(hibus_conn* conn, const char* from_endpoint, const char* to_m
 
     ret_code = wifi_device->wifi_device_Ops->connect(wifi_device->context, ssid, password);
 
+    if(ret_code == 0)
+    {
+        memset(wifi_device->ssid, 0, WIFI_SSID_LENGTH);
+        sprintf(wifi_device->ssid, "%s", ssid);
+    }
 failed:
     if(jo)
         json_object_put (jo);
@@ -441,12 +471,11 @@ failed:
     if(jo)
         json_object_put (jo);
 
-    memset(ret_string, 0, 4096);
     sprintf(ret_string, "{\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
     return ret_string;
 }
 
-char * wifiGetNetworkInfo(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
+char * wifiGetDeviceStatus(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
 {
     hibus_json *jo = NULL;
     hibus_json *jo_tmp = NULL;
@@ -458,6 +487,9 @@ char * wifiGetNetworkInfo(hibus_conn* conn, const char* from_endpoint, const cha
     char * ret_string = malloc(4096);
     WiFi_device * wifi_device = NULL;
 
+    memset(ret_string, 0, 4096);
+    sprintf(ret_string, "{\"data\":{");
+
     // get device array
     network_device * device = hibus_conn_get_user_data(conn);
     if(device == NULL)
@@ -467,7 +499,7 @@ char * wifiGetNetworkInfo(hibus_conn* conn, const char* from_endpoint, const cha
     }
 
     // get procedure name
-    if(strncasecmp(to_method, METHOD_WIFI_GET_NETWORK_INFO, strlen(METHOD_WIFI_GET_NETWORK_INFO)))
+    if(strncasecmp(to_method, METHOD_WIFI_GET_DEVICE_STATUS, strlen(METHOD_WIFI_GET_DEVICE_STATUS)))
     {
         ret_code = ERR_WRONG_PROCEDURE;
         goto failed;
@@ -532,8 +564,6 @@ char * wifiGetNetworkInfo(hibus_conn* conn, const char* from_endpoint, const cha
 
     ret_code = wifi_device->wifi_device_Ops->get_cur_net_info(wifi_device->context, reply, reply_length);
 
-    memset(ret_string, 0, 4096);
-    sprintf(ret_string, "{\"data\":{");
     if(ret_code == 0)
     {
         char * tempstart = NULL;
@@ -623,12 +653,12 @@ char * wifiGetNetworkInfo(hibus_conn* conn, const char* from_endpoint, const cha
         // singal
 
     }
-    sprintf(ret_string + strlen(ret_string), "},");
 
 failed:
     if(jo)
         json_object_put (jo);
 
+    sprintf(ret_string + strlen(ret_string), "},");
     sprintf(ret_string + strlen(ret_string), "\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
 
     return ret_string;
@@ -642,10 +672,10 @@ void report_wifi_scan_info(network_device * device, wifi_hotspot * hotspots, int
     wifi_hotspot * nodecopynext = NULL;
     WiFi_device * wifi_device = NULL;
 
-
     if(device == NULL)
         return;
 
+printf("============================================================================================================= send signal message.\n");
     // according to signal strength, order the list
     if(number > 1)
     {
@@ -689,6 +719,41 @@ void report_wifi_scan_info(network_device * device, wifi_hotspot * hotspots, int
     pthread_mutex_unlock(&(wifi_device->list_mutex));
 
     // send the message
+    char message[4096];
+    int i = 0;
+//    if(hotspots && wifi_device->ssid[0] && strcmp((char *)wifi_device->ssid, (char *)hotspots->ssid) == 0)
+//    {
+        memset(message, 0, 4096);
+        sprintf(message, "{\"ssid\":\"%s\", \"signalStrength\":%d}", hotspots->ssid, hotspots->signal_strength);
+        hibus_fire_event(hibus_context_inetd, WIFISIGNALSTRENGTHCHANGED, message);
+//    }
+
+//    if(wifi_device->start_scan)
+//    {
+        memset(message, 0, 4096);
+        sprintf(message, "{\"data\":[");
+
+        node = hotspots;
+        for(i = 0; i < number; i++)
+        {
+            if(node != hotspots)
+                sprintf(message + strlen(message), ",");
+
+            sprintf(message + strlen(message), 
+                    "{"
+                        "\"bssid\":\"%s\","
+                        "\"ssid\":\"%s\","
+                        "\"capabilities\":\"%s\","
+                        "\"signalStrength\":%d"
+                    "}",
+                    node->bssid, node->ssid, node->capabilities, node->signal_strength);
+            node = node->next;
+        }
+        sprintf(message + strlen(message), "]}"); 
+        hibus_fire_event(hibus_context_inetd, WIFINEWHOTSPOTS, message);
+        wifi_device->start_scan = false;
+//    }
+
 }
 
 void wifi_register(hibus_conn * hibus_context_inetd)
@@ -723,10 +788,10 @@ void wifi_register(hibus_conn * hibus_context_inetd)
         return;
     }
 
-    ret_code = hibus_register_procedure(hibus_context_inetd, METHOD_WIFI_GET_NETWORK_INFO, NULL, NULL, wifiGetNetworkInfo);
+    ret_code = hibus_register_procedure(hibus_context_inetd, METHOD_WIFI_GET_DEVICE_STATUS, NULL, NULL, wifiGetDeviceStatus);
     if(ret_code)
     {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_GET_NETWORK_INFO, hibus_get_err_message(ret_code));
+        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_GET_DEVICE_STATUS, hibus_get_err_message(ret_code));
         return;
     }
 
@@ -754,6 +819,6 @@ void wifi_revoke(hibus_conn * hibus_context_inetd)
     hibus_revoke_procedure(hibus_context_inetd, METHOD_WIFI_STOP_SCAN);
     hibus_revoke_procedure(hibus_context_inetd, METHOD_WIFI_CONNECT_AP);
     hibus_revoke_procedure(hibus_context_inetd, METHOD_WIFI_DISCONNECT_AP);
-    hibus_revoke_procedure(hibus_context_inetd, METHOD_WIFI_GET_NETWORK_INFO);
+    hibus_revoke_procedure(hibus_context_inetd, METHOD_WIFI_GET_DEVICE_STATUS);
 }
 

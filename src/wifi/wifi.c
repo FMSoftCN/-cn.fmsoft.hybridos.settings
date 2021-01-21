@@ -19,6 +19,60 @@ static hiWiFiDeviceOps wifiOps;
 static const char *ctrl_iface_dir = CONFIG_CTRL_IFACE_DIR;
 static int event = WIFIMG_NETWORK_DISCONNECTED;
 
+static int change_string(char * src, int src_length, unsigned char * dest, int dest_length)
+{
+    int i = 0;
+    int j = 0;
+    unsigned char tempchar = 0;
+
+    if((src == NULL) || (dest == NULL))
+        return -1;
+
+    memset(dest, 0, dest_length);
+    for(i = 0, j = 0; ((i < src_length) && (j < dest_length)); i++, j++)
+    {
+        if(*(src + i) == '\\')
+        {
+            i ++;
+            if(i >= src_length)
+                break;
+
+            if(*(src + i) == 'x')
+            {
+                i ++;
+                if(i >= src_length)
+                    break;
+                if((*(src + i) >= '0') && (*(src + i) <= '9'))
+                    tempchar = (*(src + i) - '0') << 4;
+                else if((*(src + i) >= 'a') && (*(src + i) <= 'f'))
+                    tempchar = (*(src + i) - 'a' + 0x0a) << 4;
+
+                i ++;
+                if(i >= src_length)
+                    break;
+                if((*(src + i) >= '0') && (*(src + i) <= '9'))
+                    tempchar |= (*(src + i) - '0');
+                else if((*(src + i) >= 'a') && (*(src + i) <= 'f'))
+                    tempchar |= (*(src + i) - 'a' + 0x0a);
+
+                *(dest + j) = tempchar;
+            }
+            else
+            {
+                *(dest + j) = '\\';
+                j ++;
+                if(j >= dest_length)
+                    break;
+                *(dest + j) = *(src + i);
+            }
+
+        }
+        else
+            *(dest + j) = *(src + i);
+    }
+    return 0;
+}
+
 static void wifi_event_handle(tWIFI_EVENT wifi_event, void *buf, int event_label)
 {
     printf("============================== event_label 0x%x\n", event_label);
@@ -154,93 +208,12 @@ static char * get_default_ifname(void)
     return ifname;
 }
 
-#ifdef gengyue
-int main(int argv, char *argc[])
-{
-    int ret = 0;
-    int len = 0;
-    int event_label = 0;
-    char results[4096] = {0};
-    const aw_wifi_interface_t *p_wifi_interface = NULL;
-    char * ctrl_ifname = NULL;
-
-    // get the default WiFi device
-    ctrl_ifname = get_default_ifname();
-    if(ctrl_ifname)
-    {
-        memset(results, 0, 4096);
-        sprintf(results, "%s/%s", ctrl_iface_dir, ctrl_ifname);
-        free(ctrl_ifname);
-    }
-    printf("Selected interface '%s'\n", results);
-
-
-    // connect to WiFi device
-    event_label = rand();
-    p_wifi_interface = aw_wifi_on(wifi_event_handle, event_label, results);
-    if(p_wifi_interface == NULL)
-    {
-        printf("wifi on failed event 0x%x\n", event);
-        return -1;
-    }
-
-    while(aw_wifi_get_wifi_state() == WIFIMG_WIFI_BUSING)
-    {
-        printf("wifi state busing,waiting\n");
-        usleep(2000000);
-    }
-
-
-    event_label++;
-    printf("============================== event_label 0x%x\n", event_label);
-
-    printf("\n*********************************\n");
-    printf("***Start scan!***\n");
-    printf("*********************************\n");
-
-
-    ret = p_wifi_interface->start_scan(event_label);
-    printf("ret of scan is %d\n", ret);
-
-    if(ret == 0)
-    {
-        printf("******************************\n");
-        printf("Wifi scan: Success!\n");
-        printf("******************************\n");
-    }
-    else
-    {
-        printf("start scan failed!\n");
-
-    }
-
-    len = 4096;
-    ret = p_wifi_interface->get_scan_results(results, &len);
-
-    printf("ret of get_scan_results is %d\n", ret);
-    if(ret == 0)
-    {
-        printf("%s\n", results);
-        printf("******************************\n");
-        printf("Wifi get_scan_results: Success!\n");
-        printf("******************************\n");
-    }
-    else
-    {
-        printf("Get_scan_results failed!\n");
-    }
-
-    return 0;
-}
-#endif
-
-
 static void get_wifimanager_info(char * device, char * results)
 {
     int number = 0;
     if(results && strlen(results) != 0)
     {
-        char content[16];
+        char content[64];
         char * tempstart = NULL;
         char * tempend = NULL;
         wifi_hotspot * firstnode = NULL;
@@ -269,7 +242,7 @@ static void get_wifimanager_info(char * device, char * results)
                 memcpy(node->frenquency, tempstart, tempend - tempstart);
 
             tempstart = tempend + 1;
-            memset(content, 0, 16);
+            memset(content, 0, 64);
             tempend = strstr(tempstart, "\t");
             if(tempend)
             {
@@ -285,10 +258,14 @@ static void get_wifimanager_info(char * device, char * results)
             tempstart = tempend + 1;
             tempend = strstr(tempstart, "\n");
             if(tempend)
-                memcpy(node->ssid, tempstart, tempend - tempstart);
+            {
+                change_string(tempstart, tempend - tempstart, (unsigned char *)content, 64);
+                memcpy(node->ssid, content, strlen(content));
+            }
             else
             {
-                memcpy(node->ssid, tempstart, strlen(tempstart));
+                change_string(tempstart, strlen(tempstart), (unsigned char *)content, 64);
+                memcpy(node->ssid, content, strlen(content));
                 number ++;
                 break;
             }
@@ -382,12 +359,13 @@ static int connect(wifi_context * context, const char * ssid, const char *passwo
     context->event_label++;
     ret_code = context->p_wifi_interface->connect_ap(ssid, password, context->event_label);
 
+/*
     while(context->p_wifi_interface->wifi_get_wifi_state() == WIFIMG_WIFI_BUSING)
     {
         printf("wifi state busing,waiting\n");
         usleep(2000000);
     }
-
+*/
     return ret_code;
 }
 
@@ -443,7 +421,7 @@ static unsigned int get_hotspots(wifi_context * context, wifi_hotspot ** hotspot
     unsigned int ret_code = 0;
     int len = 4096;
     char results[4096];
-    char content[16];
+    char content[64];
 
     memset(results, 0, 4096);
     ret_code = context->p_wifi_interface->get_scan_results(results, &len);
@@ -477,7 +455,7 @@ static unsigned int get_hotspots(wifi_context * context, wifi_hotspot ** hotspot
                 memcpy(node->frenquency, tempstart, tempend - tempstart);
 
             tempstart = tempend + 1;
-            memset(content, 0, 16);
+            memset(content, 0, 64);
             tempend = strstr(tempstart, "\t");
             if(tempend)
             {
@@ -493,10 +471,15 @@ static unsigned int get_hotspots(wifi_context * context, wifi_hotspot ** hotspot
             tempstart = tempend + 1;
             tempend = strstr(tempstart, "\n");
             if(tempend)
-                memcpy(node->ssid, tempstart, tempend - tempstart);
+            {
+                change_string(tempstart, tempend - tempstart, (unsigned char *)content, 64);
+                memcpy(node->ssid, content, strlen(content));
+            }
             else
             {
-                memcpy(node->ssid, tempstart, strlen(tempstart));
+                change_string(tempstart, strlen(tempstart), (unsigned char *)content, 64);
+                memcpy(node->ssid, content, strlen(content));
+
                 node->next = malloc(sizeof(wifi_hotspot));
                 node = node->next;
                 memset(node, 0, sizeof(wifi_hotspot));

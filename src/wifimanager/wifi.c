@@ -599,6 +599,9 @@ int wifi_command(char const *cmd, char *reply, size_t reply_len)
         return -1;
     }
 
+    if(strncmp(cmd, "SAVE_CONFIG", strlen("SAVE_CONFIG")) == 0)
+        return 0;
+
     printf("do cmd %s\n", cmd);
 
     --reply_len; // Ensure we have room to add NUL termination.

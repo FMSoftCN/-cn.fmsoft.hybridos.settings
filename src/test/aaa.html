@@ -1,0 +1,411 @@
+<html>
+    <head>
+        <title>hibus</title>
+    </head>
+    <body>
+        <p> application name: <b>cn.fmsoft.hybridos.sysmgr</b> </p>
+        <p> runner      name: <b>gui</b> </p>
+        <hr>
+
+        <hr>
+        <p> Step 1: Connect to hiBus Server with WebSocket.</p>
+        <button id="btnValue1" type="button">start hibus</button> 
+        <p id="hibusstatus"> hiBus status: disconnect</p> 
+        <hr>
+
+        <hr>
+        <p> Step 2: Get All network devices, you can choose one WiFi device.</p>
+        <button id="btnValue2" type="button">call procedure: getNetworkDevicesStatus </button>
+        <p id="netcards"> network devices: </p> 
+        <hr>
+
+        <hr>
+        <p> Step 3: Open one WiFi device, inetd start scan thread.</p>
+        <button id="btnValue3" type="button">call procedure: openDevice </button>
+        <p id="openDevice"></p> 
+        <hr>
+
+        <hr>
+        <p> Step 4: Get Selected Wifi device status.</p>
+        <button id="btnValue4" type="button">call procedure: wifiGetDeviceStatus </button>
+        <p id="devicenetwork"></p> 
+        <hr>
+
+        <hr>
+        <p> Step 5: Get Wifi network list, and start scan again.</p>
+        <button id="btnValue5" type="button">call procedure: Start Scan AP </button>
+        <p id="APlist"></p> 
+        <hr>
+
+        <hr>
+        <p> Step 6: Connect expected AP.</p>
+        <button id="btnValue6" type="button">call procedure: Connect AP </button>
+        <p id="connectap"></p> 
+        <hr>
+
+        <hr>
+        <p> Step 11: Subscribe WIFISIGNALSTRENGTHCHANGED event.</p>
+        <button id="btnValue11" type="button">subscribe WIFISIGNALSTRENGTHCHANGED </button>
+        <p id="subsignal"></p> 
+        <p id="signalstrength"></p> 
+        <hr>
+
+        <hr>
+        <p> Step 12: Unsubscribe WIFISIGNALSTRENGTHCHANGED event.</p>
+        <button id="btnValue12" type="button">unsubscribe WIFISIGNALSTRENGTHCHANGED </button>
+        <p id="unsubsignal"></p> 
+        <hr>
+
+        <hr>
+        <p> Step 13: Subscribe WIFINEWHOTSPOTS event.</p>
+        <button id="btnValue13" type="button">subscribe WIFINEWHOTSPOTS </button>
+        <p id="subhotspots"></p> 
+        <p id="hotspots"></p> 
+        <hr>
+
+        <hr>
+        <p> Step 14: Unsubscribe WIFINEWHOTSPOTS event.</p>
+        <button id="btnValue14" type="button">unsubscribe WIFINEWHOTSPOTS </button>
+        <p id="unsubhotspots"></p> 
+        <hr>
+        
+        <script type="text/javascript">
+            document.write("<script language=javascript src='hiBus.js'><\/script>");
+
+            var myHiBus;
+
+            // start function
+            function startCallback(result)
+            {
+                if(result == hiBus.ERRNO)
+                    document.getElementById("hibusstatus").innerHTML = "hiBus status: Connected.";
+                else if(result == hiBus.ERRCONNECT)
+                    document.getElementById("hibusstatus").innerHTML = "hiBus status: Closed because some errors occur in connection.";
+                else if(result == hiBus.ERRAUTHENRITY)
+                    document.getElementById("hibusstatus").innerHTML = "hiBus status: Closed because some errors occur in authenrity.";
+            }
+
+            function toStart()
+            {
+                if(typeof(myHiBus) == "undefined")
+                {
+                    myHiBus = new hiBus("cn.fmsoft.hybridos.sysmgr", "gui", null, startCallback);
+                }
+            }
+
+
+            // to call procedure: getNetWorkDevice
+            function getNetWorkDeviceCallback(result)
+            {
+                // error in hibus
+                if(typeof(result) == "number")
+                {
+                    console.log("An error occurs in hiBus communication. Error code is " + result);
+                }
+                else if(typeof(result) == "string")
+                {
+                    var packetJson;
+                    try {
+                        packetJson = JSON.parse(result);
+                    } catch (e) {
+                        console.log(e.message);
+                        return;
+                    }
+                    if(packetJson.errCode == 0)
+                    {
+                        var info = "<table border=\"1\"> <tr> <th>Name</th> <th>Type</th> <th>Status</th> <th>IP</th> </tr>";
+
+                        for(var i = 0; i < packetJson.data.length; i++)
+                            info += "<tr> <td>" + packetJson.data[i].device + "</td><td>" + packetJson.data[i].type + "</td><td>" + 
+                                    packetJson.data[i].status + "</td><td>" + packetJson.data[i].ip + "</td></tr>";
+                        info += "</table>"
+                        document.getElementById("netcards").innerHTML = info;
+                    }
+                    else
+                        document.getElementById("netcards").innerHTML = "getNetworkDevicesStatus is error, because " + packetJson.errMsg;
+                }
+            }
+
+            function toGetDevice()
+            {
+                if(typeof(myHiBus) != "undefined")
+                    myHiBus.callProcedure("@localhost/cn.fmsoft.hybridos.settings/inetd", "getNetworkDevicesStatus", "{}", 1000, 
+                                        getNetWorkDeviceCallback);
+            }
+
+
+            // to call procedure: openDevice 
+            function openDeviceCallback(result)
+            {
+                // error in hibus
+                if(typeof(result) == "number")
+                {
+                    console.log("An error occurs in hiBus communication. Error code is " + result);
+                }
+                else if(typeof(result) == "string")
+                {
+                    var packetJson;
+                    try {
+                        packetJson = JSON.parse(result);
+                    } catch (e) {
+                        console.log(e.message);
+                        return;
+                    }
+                    if(packetJson.errCode == 0)
+                    {
+                        document.getElementById("openDevice").innerHTML = "Open WiFi Device is OK!";
+                    }
+                    else
+                        document.getElementById("openDevice").innerHTML = "openDevice is error, because " + packetJson.errMsg;
+                }
+            }
+
+            function toOpenDevice()
+            {
+                if(typeof(myHiBus) != "undefined")
+                    myHiBus.callProcedure("@localhost/cn.fmsoft.hybridos.settings/inetd", "openDevice", "{\"device\":\"wlp5s0\"}", 1000, 
+                                        openDeviceCallback);
+            }
+
+
+            // to call procedure: wifiGetDeviceStatus 
+            function wifiGetDeviceStatusCallback(result)
+            {
+                // error in hibus
+                if(typeof(result) == "number")
+                {
+                    console.log("An error occurs in hiBus communication. Error code is " + result);
+                }
+                else if(typeof(result) == "string")
+                {
+                    var packetJson;
+                    try {
+                        packetJson = JSON.parse(result);
+                    } catch (e) {
+                        console.log(e.message);
+                        return;
+                    }
+                    if(packetJson.errCode == 0)
+                    {
+                        var info = "<table border=\"1\"> <tr> <th>device</th> <th>bssid</th> <th>ssid</th> <th>Encrption</th>"  
+                                    + "<th>IP</th> <th>MAC</th> <th>Speed</th> <th>Frequency</th> </tr>";
+                        info += "<tr><td>" + packetJson.data.device + "</td><td>"  + packetJson.data.bssid + "</td><td>"  +  
+                                    packetJson.data.ssid + "</td><td>"  + packetJson.data.encryptionType + "</td><td>" + 
+                                    packetJson.data.ip + "</td><td>" + packetJson.data.mac + "</td><td>" + packetJson.data.speed + 
+                                    "</td><td>" + packetJson.data.frenquency + "</td></tr>"
+                        document.getElementById("devicenetwork").innerHTML = info;
+                    }
+                    else
+                        document.getElementById("devicenetwork").innerHTML = "wifiGetDeviceStatus is error, because " + packetJson.errMsg;
+                }
+            }
+
+            function toGetWiFiDeviceStatus()
+            {
+                if(typeof(myHiBus) != "undefined")
+                    myHiBus.callProcedure("@localhost/cn.fmsoft.hybridos.settings/inetd", "wifiGetDeviceStatus", "{\"device\":\"wlp5s0\"}", 1000, 
+                                        wifiGetDeviceStatusCallback);
+            }
+
+
+            // to call procedure: wifiStartScanHotspots
+            function wifiStartScanHotspotsCallback(result)
+            {
+                // error in hibus
+                if(typeof(result) == "number")
+                {
+                    console.log("An error occurs in hiBus communication. Error code is " + result);
+                }
+                else if(typeof(result) == "string")
+                {
+                    var packetJson;
+                    try {
+                        packetJson = JSON.parse(result);
+                    } catch (e) {
+                        console.log(e.message);
+                        return;
+                    }
+                    if(packetJson.errCode == 0)
+                    {
+                        var info = "<table border=\"1\"><tr><th>bssid</th><th>ssid</th><th>Frequency</th><th>Capability</th><th>Signal</th></tr>";
+
+                        for(var i = 0; i < packetJson.data.length; i++)
+                            info += "<tr> <td>" + packetJson.data[i].bssid + "</td><td>" + packetJson.data[i].ssid + "</td><td>" + 
+                                    packetJson.data[i].frequency + "</td><td>" + packetJson.data[i].capabilities + "</td><td>" + 
+                                    packetJson.data[i].signalStrength + "</td></tr>";
+                        info += "</table>"
+                        document.getElementById("APlist").innerHTML = info;
+                    }
+                    else
+                        document.getElementById("APlist").innerHTML = "wifiStartScanHotspots is error, because " + packetJson.errMsg;
+                }
+            }
+
+            function toStartScanAP()
+            {
+                if(typeof(myHiBus) != "undefined")
+                    myHiBus.callProcedure("@localhost/cn.fmsoft.hybridos.settings/inetd", "wifiStartScanHotspots", "{\"device\":\"wlp5s0\"}", 1000, 
+                                        wifiStartScanHotspotsCallback);
+            }
+
+
+            // to call procedure: wifiConnect 
+            function connectAPCallback(result)
+            {
+                // error in hibus
+                if(typeof(result) == "number")
+                {
+                    console.log("An error occurs in hiBus communication. Error code is " + result);
+                }
+                else if(typeof(result) == "string")
+                {
+                    var packetJson;
+                    try {
+                        packetJson = JSON.parse(result);
+                    } catch (e) {
+                        console.log(e.message);
+                        return;
+                    }
+                    if(packetJson.errCode == 0)
+                    {
+                        var info = "</table>"
+                        document.getElementById("connectap").innerHTML = info;
+                    }
+                    else
+                        document.getElementById("connectap").innerHTML = "wifiConnect is error, because " + packetJson.errMsg;
+                }
+            }
+
+            function toConnectAP()
+            {
+                if(typeof(myHiBus) != "undefined")
+                    myHiBus.callProcedure("@localhost/cn.fmsoft.hybridos.settings/inetd", "wifiConnect", 
+                                        "{\"device\":\"wlp5s0\", \"ssid\":\"fmsoft_dev_7\", \"password\":\"suzhoujie123456\","
+                                        + "\"autoConnect\":true, \"default\":true}", 1000, connectAPCallback);
+            }
+
+
+
+
+            // subscribe WIFISIGNALSTRENGTHCHANGED event
+            function subscribeSignalFunctionCallback(result)
+            {
+                if(result == 200)
+                    document.getElementById("subsignal").innerHTML = "SubScribe WIFISIGNALSTRENGTHCHANGED event OK!";
+                else if(result == 404)
+                    document.getElementById("subsignal").innerHTML = "SubScribe WIFISIGNALSTRENGTHCHANGED error: can not find specified event.";
+                else if(result == 403)
+                    document.getElementById("subsignal").innerHTML = "SubScribe WIFISIGNALSTRENGTHCHANGED error: have not enough permission.";
+
+            }
+            function subscribeSignalCallback(result)
+            {
+                var packetJson;
+                try {
+                    packetJson = JSON.parse(result);
+                } catch (e) {
+                    console.log(e.message);
+                    return;
+                }
+                document.getElementById("signalstrength").innerHTML = packetJson.ssid + " signal strength is " + packetJson.signalStrength;
+            }
+
+            function toSubscribeSignal()
+            {
+                if(typeof(myHiBus) != "undefined")
+                    myHiBus.subscribeEvent("@localhost/cn.fmsoft.hybridos.settings/inetd", "WIFISIGNALSTRENGTHCHANGED", subscribeSignalCallback, subscribeSignalFunctionCallback);
+            }
+
+
+            // unsubscribe WIFISIGNALSTRENGTHCHANGED event
+            function unsubscribeSignalCallback(result)
+            {
+                if(result == 200)
+                {
+                    document.getElementById("unsubsignal").innerHTML = "UnsubScribe WIFISIGNALSTRENGTHCHANGED event OK!";
+                    document.getElementById("subsignal").innerHTML = "";
+                    document.getElementById("signalstrength").innerHTML = "";
+                }
+                else if(result == 404)
+                    document.getElementById("unsubsignal").innerHTML = "UnsubScribe WIFISIGNALSTRENGTHCHANGED error: the event has been removed!";
+            }
+
+            function toUnsubscribeSignal()
+            {
+                if(typeof(myHiBus) != "undefined")
+                    myHiBus.unsubscribeEvent("@localhost/cn.fmsoft.hybridos.settings/inetd", "WIFISIGNALSTRENGTHCHANGED", unsubscribeSignalCallback);
+            }
+
+
+            // subscribe WIFINEWHOTSPOTS event
+            function subscribeHotspotsFunctionCallback(result)
+            {
+                if(result == 200)
+                    document.getElementById("subhotspots").innerHTML = "SubScribe WIFINEWHOTSPOTS event OK!";
+                else if(result == 404)
+                    document.getElementById("subhotspots").innerHTML = "SubScribe WIFINEWHOTSPOTS error: can not find specified event.";
+                else if(result == 403)
+                    document.getElementById("subhotspots").innerHTML = "SubScribe WIFINEWHOTSPOTS error: have not enough permission.";
+
+            }
+            function subscribeHotspotsCallback(result)
+            {
+                var packetJson;
+                try {
+                    packetJson = JSON.parse(result);
+                } catch (e) {
+                    console.log(e.message);
+                    return;
+                }
+
+                var info = "<table border=\"1\"><tr><th>bssid</th><th>ssid</th><th>Capability</th><th>Signal</th></tr>";
+
+                for(var i = 0; i < packetJson.data.length; i++)
+                    info += "<tr> <td>" + packetJson.data[i].bssid + "</td><td>" + packetJson.data[i].ssid + "</td><td>" + 
+                        packetJson.data[i].capabilities + "</td><td>" + packetJson.data[i].signalStrength + "</td></tr>";
+                info += "</table>"
+
+                document.getElementById("hotspots").innerHTML = info;
+            }
+
+            function toSubscribeHotspots()
+            {
+                if(typeof(myHiBus) != "undefined")
+                    myHiBus.subscribeEvent("@localhost/cn.fmsoft.hybridos.settings/inetd", "WIFINEWHOTSPOTS", subscribeHotspotsCallback, subscribeHotspotsFunctionCallback);
+            }
+
+
+            // unsubscribe WIFINEWHOTSPOTS event
+            function unsubscribeHotspotsCallback(result)
+            {
+                if(result == 200)
+                {
+                    document.getElementById("unsubhotspots").innerHTML = "UnsubScribe WIFINEWHOTSPOTS event OK!";
+                    document.getElementById("subhotspots").innerHTML = "";
+                    document.getElementById("hotspots").innerHTML = "";
+                }
+                else if(result == 404)
+                    document.getElementById("unsubhotspots").innerHTML = "UnsubScribe WIFINEWHOTSPOTS error: the event has been removed!";
+            }
+
+            function toUnsubscribeHotspots()
+            {
+                if(typeof(myHiBus) != "undefined")
+                    myHiBus.unsubscribeEvent("@localhost/cn.fmsoft.hybridos.settings/inetd", "WIFINEWHOTSPOTS", unsubscribeHotspotsCallback);
+            }
+
+            document.getElementById("btnValue1").onclick = toStart;
+            document.getElementById("btnValue2").onclick = toGetDevice;
+            document.getElementById("btnValue3").onclick = toOpenDevice;
+            document.getElementById("btnValue4").onclick = toGetWiFiDeviceStatus;
+            document.getElementById("btnValue5").onclick = toStartScanAP;
+            document.getElementById("btnValue6").onclick = toConnectAP;
+
+            document.getElementById("btnValue11").onclick = toSubscribeSignal;
+            document.getElementById("btnValue12").onclick = toUnsubscribeSignal;
+            document.getElementById("btnValue13").onclick = toSubscribeHotspots;
+            document.getElementById("btnValue14").onclick = toUnsubscribeHotspots;
+
+        </script>
+    </body>
+</html>

@@ -272,6 +272,9 @@ char * getNetworkDevicesStatus(hibus_conn* conn, const char* from_endpoint, cons
     char * status = NULL;
     int first = true;
 
+    memset(ret_string, 0, 4096);
+    sprintf(ret_string, "{\"data\":[");
+
     network_device * device = hibus_conn_get_user_data(conn);
     if(device == NULL)
     {
@@ -285,8 +288,6 @@ char * getNetworkDevicesStatus(hibus_conn* conn, const char* from_endpoint, cons
         goto failed;
     }
 
-    memset(ret_string, 0, 4096);
-    sprintf(ret_string, "{\"data\":[");
     for(i = 0; i < MAX_DEVICE_NUM; i++)
     {
         if(device[i].ifname[0])
