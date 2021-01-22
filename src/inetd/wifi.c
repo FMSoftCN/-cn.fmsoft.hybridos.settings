@@ -719,18 +719,18 @@ printf("========================================================================
     pthread_mutex_unlock(&(wifi_device->list_mutex));
 
     // send the message
-    char message[4096];
+    char message[8192];
     int i = 0;
 //    if(hotspots && wifi_device->ssid[0] && strcmp((char *)wifi_device->ssid, (char *)hotspots->ssid) == 0)
 //    {
-        memset(message, 0, 4096);
+        memset(message, 0, 8192);
         sprintf(message, "{\"ssid\":\"%s\", \"signalStrength\":%d}", hotspots->ssid, hotspots->signal_strength);
         hibus_fire_event(hibus_context_inetd, WIFISIGNALSTRENGTHCHANGED, message);
 //    }
 
 //    if(wifi_device->start_scan)
 //    {
-        memset(message, 0, 4096);
+        memset(message, 0, 8192);
         sprintf(message, "{\"data\":[");
 
         node = hotspots;

@@ -72,24 +72,35 @@
         <script type="text/javascript">
             document.write("<script language=javascript src='hiBus.js'><\/script>");
 
-            var myHiBus;
+            // change these variables for your application
+            var yourAppName = "cn.fmsoft.hybridos.sysmgr"; 
+            var yourRunnerName = "gui";
+            var yourWiFiDeviceName = "wlp5s0";
+
+            // do not change these variables
+            var myHiBus = null;
+            var endpointName = "@localhost/cn.fmsoft.hybridos.settings/inetd"; 
 
             // start function
             function startCallback(result)
             {
                 if(result == hiBus.ERRNO)
                     document.getElementById("hibusstatus").innerHTML = "hiBus status: Connected.";
-                else if(result == hiBus.ERRCONNECT)
-                    document.getElementById("hibusstatus").innerHTML = "hiBus status: Closed because some errors occur in connection.";
-                else if(result == hiBus.ERRAUTHENRITY)
-                    document.getElementById("hibusstatus").innerHTML = "hiBus status: Closed because some errors occur in authenrity.";
+                else
+                {
+                    if(result == hiBus.ERRCONNECT)
+                        document.getElementById("hibusstatus").innerHTML = "hiBus status: Closed because some errors occur in connection.";
+                    else if(result == hiBus.ERRAUTHENRITY)
+                        document.getElementById("hibusstatus").innerHTML = "hiBus status: Closed because some errors occur in authenrity.";
+                    myHiBus = null;
+                }
             }
 
             function toStart()
             {
-                if(typeof(myHiBus) == "undefined")
+                if(myHiBus == null)
                 {
-                    myHiBus = new hiBus("cn.fmsoft.hybridos.sysmgr", "gui", null, startCallback);
+                    myHiBus = new hiBus(yourAppName, yourRunnerName, null, startCallback);
                 }
             }
 
@@ -128,8 +139,8 @@
 
             function toGetDevice()
             {
-                if(typeof(myHiBus) != "undefined")
-                    myHiBus.callProcedure("@localhost/cn.fmsoft.hybridos.settings/inetd", "getNetworkDevicesStatus", "{}", 1000, 
+                if(myHiBus != null)
+                    myHiBus.callProcedure(endpointName, "getNetworkDevicesStatus", "{}", 1000, 
                                         getNetWorkDeviceCallback);
             }
 
@@ -162,8 +173,8 @@
 
             function toOpenDevice()
             {
-                if(typeof(myHiBus) != "undefined")
-                    myHiBus.callProcedure("@localhost/cn.fmsoft.hybridos.settings/inetd", "openDevice", "{\"device\":\"wlp5s0\"}", 1000, 
+                if(myHiBus != null)
+                    myHiBus.callProcedure(endpointName, "openDevice", "{\"device\":\"" + yourWiFiDeviceName + "\"}", 1000, 
                                         openDeviceCallback);
             }
 
@@ -202,8 +213,8 @@
 
             function toGetWiFiDeviceStatus()
             {
-                if(typeof(myHiBus) != "undefined")
-                    myHiBus.callProcedure("@localhost/cn.fmsoft.hybridos.settings/inetd", "wifiGetDeviceStatus", "{\"device\":\"wlp5s0\"}", 1000, 
+                if(myHiBus != null)
+                    myHiBus.callProcedure(endpointName, "wifiGetDeviceStatus", "{\"device\":\"" + yourWiFiDeviceName + "\"}", 1000, 
                                         wifiGetDeviceStatusCallback);
             }
 
@@ -243,8 +254,8 @@
 
             function toStartScanAP()
             {
-                if(typeof(myHiBus) != "undefined")
-                    myHiBus.callProcedure("@localhost/cn.fmsoft.hybridos.settings/inetd", "wifiStartScanHotspots", "{\"device\":\"wlp5s0\"}", 1000, 
+                if(myHiBus != null)
+                    myHiBus.callProcedure(endpointName, "wifiStartScanHotspots", "{\"device\":\"" + yourWiFiDeviceName + "\"}", 1000, 
                                         wifiStartScanHotspotsCallback);
             }
 
@@ -278,9 +289,9 @@
 
             function toConnectAP()
             {
-                if(typeof(myHiBus) != "undefined")
-                    myHiBus.callProcedure("@localhost/cn.fmsoft.hybridos.settings/inetd", "wifiConnect", 
-                                        "{\"device\":\"wlp5s0\", \"ssid\":\"fmsoft_dev_7\", \"password\":\"suzhoujie123456\","
+                if(myHiBus != null)
+                    myHiBus.callProcedure(endpointName, "wifiConnect", 
+                                        "{\"device\":\"" + yourWiFiDeviceName + "\", \"ssid\":\"fmsoft_dev_7\", \"password\":\"suzhoujie123456\","
                                         + "\"autoConnect\":true, \"default\":true}", 1000, connectAPCallback);
             }
 
@@ -312,8 +323,8 @@
 
             function toSubscribeSignal()
             {
-                if(typeof(myHiBus) != "undefined")
-                    myHiBus.subscribeEvent("@localhost/cn.fmsoft.hybridos.settings/inetd", "WIFISIGNALSTRENGTHCHANGED", subscribeSignalCallback, subscribeSignalFunctionCallback);
+                if(myHiBus != null)
+                    myHiBus.subscribeEvent(endpointName, "WIFISIGNALSTRENGTHCHANGED", subscribeSignalCallback, subscribeSignalFunctionCallback);
             }
 
 
@@ -332,8 +343,8 @@
 
             function toUnsubscribeSignal()
             {
-                if(typeof(myHiBus) != "undefined")
-                    myHiBus.unsubscribeEvent("@localhost/cn.fmsoft.hybridos.settings/inetd", "WIFISIGNALSTRENGTHCHANGED", unsubscribeSignalCallback);
+                if(myHiBus != null)
+                    myHiBus.unsubscribeEvent(endpointName, "WIFISIGNALSTRENGTHCHANGED", unsubscribeSignalCallback);
             }
 
 
@@ -370,8 +381,8 @@
 
             function toSubscribeHotspots()
             {
-                if(typeof(myHiBus) != "undefined")
-                    myHiBus.subscribeEvent("@localhost/cn.fmsoft.hybridos.settings/inetd", "WIFINEWHOTSPOTS", subscribeHotspotsCallback, subscribeHotspotsFunctionCallback);
+                if(myHiBus != null)
+                    myHiBus.subscribeEvent(endpointName, "WIFINEWHOTSPOTS", subscribeHotspotsCallback, subscribeHotspotsFunctionCallback);
             }
 
 
@@ -390,8 +401,8 @@
 
             function toUnsubscribeHotspots()
             {
-                if(typeof(myHiBus) != "undefined")
-                    myHiBus.unsubscribeEvent("@localhost/cn.fmsoft.hybridos.settings/inetd", "WIFINEWHOTSPOTS", unsubscribeHotspotsCallback);
+                if(myHiBus != null)
+                    myHiBus.unsubscribeEvent(endpointName, "WIFINEWHOTSPOTS", unsubscribeHotspotsCallback);
             }
 
             document.getElementById("btnValue1").onclick = toStart;

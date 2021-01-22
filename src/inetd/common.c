@@ -44,7 +44,7 @@ const char *op_errors[] = {
     "an error ocurs in close ethernet device.", // ERR_CLOSE_ETHERNET_DEVICE
     "an error ocurs in open mobile device.",    // ERR_OPEN_MOBILE_DEVICE
     "an error ocurs in close mobile device.",   // ERR_CLOSE_MOBILE_DEVICE
-    "device does not connect."                  // ERR_DEVICE_NOT_CONNECT
+    "device does not connect any network."      // ERR_DEVICE_NOT_CONNECT
 };
 
 char * openDevice(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
