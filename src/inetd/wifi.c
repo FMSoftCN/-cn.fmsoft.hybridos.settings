@@ -141,7 +141,6 @@ failed:
                 "}",
                 node->bssid, node->ssid, node->frenquency, node->capabilities, node->signal_strength);
 
-printf("======= string length is %d\n", strlen(ret_string));
         node = node->next;
     }
     pthread_mutex_unlock(&(wifi_device->list_mutex));
@@ -475,7 +474,7 @@ failed:
     return ret_string;
 }
 
-char * wifiGetDeviceStatus(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
+char * wifiGetNetworkInfo(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
 {
     hibus_json *jo = NULL;
     hibus_json *jo_tmp = NULL;
@@ -499,7 +498,7 @@ char * wifiGetDeviceStatus(hibus_conn* conn, const char* from_endpoint, const ch
     }
 
     // get procedure name
-    if(strncasecmp(to_method, METHOD_WIFI_GET_DEVICE_STATUS, strlen(METHOD_WIFI_GET_DEVICE_STATUS)))
+    if(strncasecmp(to_method, METHOD_WIFI_GET_NETWORK_INFO, strlen(METHOD_WIFI_GET_NETWORK_INFO)))
     {
         ret_code = ERR_WRONG_PROCEDURE;
         goto failed;
@@ -788,10 +787,10 @@ void wifi_register(hibus_conn * hibus_context_inetd)
         return;
     }
 
-    ret_code = hibus_register_procedure(hibus_context_inetd, METHOD_WIFI_GET_DEVICE_STATUS, NULL, NULL, wifiGetDeviceStatus);
+    ret_code = hibus_register_procedure(hibus_context_inetd, METHOD_WIFI_GET_NETWORK_INFO, NULL, NULL, wifiGetNetworkInfo);
     if(ret_code)
     {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_GET_DEVICE_STATUS, hibus_get_err_message(ret_code));
+        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_GET_NETWORK_INFO, hibus_get_err_message(ret_code));
         return;
     }
 
@@ -819,6 +818,6 @@ void wifi_revoke(hibus_conn * hibus_context_inetd)
     hibus_revoke_procedure(hibus_context_inetd, METHOD_WIFI_STOP_SCAN);
     hibus_revoke_procedure(hibus_context_inetd, METHOD_WIFI_CONNECT_AP);
     hibus_revoke_procedure(hibus_context_inetd, METHOD_WIFI_DISCONNECT_AP);
-    hibus_revoke_procedure(hibus_context_inetd, METHOD_WIFI_GET_DEVICE_STATUS);
+    hibus_revoke_procedure(hibus_context_inetd, METHOD_WIFI_GET_NETWORK_INFO);
 }
 

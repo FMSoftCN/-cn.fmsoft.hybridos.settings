@@ -58,13 +58,13 @@ int main(void)
 
 
     endpoint = hibus_assemble_endpoint_name_alloc(HIBUS_LOCALHOST, APP_NAME_SETTINGS, RUNNER_NAME_INETD);
+    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_NET_OPEN_DEVICE, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
+//    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_NET_CLOSE_DEVICE, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
+//    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_NET_GET_DEVICES_STATUS, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
     //hibus_call_procedure_and_wait(hibus_context, endpoint, METHOD_WIFI_START_SCAN, "{\"abcd\":1234}", 1000, &ret_code, &ret_value);
-    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_OPEN_DEVICE, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
-//    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_CLOSE_DEVICE, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
-//    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_GET_DEVICES_STATUS, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
 //    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_START_SCAN, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
     ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_CONNECT_AP, "{\"device\":\"wlp5s0\", \"ssid\":\"fmsoft_dev_7\", \"password\":\"suzhoujie123456\"}", 1000, wifi_scan_handler);
-//    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_GET_DEVICE_STATUS, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
+//    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_GET_NETWORK_INFO, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
     ret_code ++;
     hibus_subscribe_event(hibus_context, endpoint, WIFISIGNALSTRENGTHCHANGED, wifi_signal_handler);
 

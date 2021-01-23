@@ -66,7 +66,7 @@ char * openDevice(hibus_conn* conn, const char* from_endpoint, const char* to_me
     }
 
     // get procedure name
-    if(strncasecmp(to_method, METHOD_WIFI_OPEN_DEVICE, strlen(METHOD_WIFI_OPEN_DEVICE)))
+    if(strncasecmp(to_method, METHOD_NET_OPEN_DEVICE, strlen(METHOD_NET_OPEN_DEVICE)))
     {
         ret_code = ERR_WRONG_PROCEDURE;
         goto failed;
@@ -176,7 +176,7 @@ char * closeDevice(hibus_conn* conn, const char* from_endpoint, const char* to_m
         goto failed;
     }
 
-    if(strncasecmp(to_method, METHOD_WIFI_CLOSE_DEVICE, strlen(METHOD_WIFI_CLOSE_DEVICE)))
+    if(strncasecmp(to_method, METHOD_NET_CLOSE_DEVICE, strlen(METHOD_NET_CLOSE_DEVICE)))
     {
         ret_code = ERR_WRONG_PROCEDURE;
         goto failed;
@@ -282,7 +282,7 @@ char * getNetworkDevicesStatus(hibus_conn* conn, const char* from_endpoint, cons
         goto failed;
     }
 
-    if(strncasecmp(to_method, METHOD_WIFI_GET_DEVICES_STATUS, strlen(METHOD_WIFI_GET_DEVICES_STATUS)))
+    if(strncasecmp(to_method, METHOD_NET_GET_DEVICES_STATUS, strlen(METHOD_NET_GET_DEVICES_STATUS)))
     {
         ret_code = ERR_WRONG_PROCEDURE;
         goto failed;
@@ -344,24 +344,24 @@ void common_register(hibus_conn * hibus_context_inetd)
 {
     int ret_code = 0;
 
-    ret_code = hibus_register_procedure(hibus_context_inetd, METHOD_WIFI_OPEN_DEVICE, NULL, NULL, openDevice);
+    ret_code = hibus_register_procedure(hibus_context_inetd, METHOD_NET_OPEN_DEVICE, NULL, NULL, openDevice);
     if(ret_code)
     {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_OPEN_DEVICE, hibus_get_err_message(ret_code));
+        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_NET_OPEN_DEVICE, hibus_get_err_message(ret_code));
         return;
     }
 
-    ret_code = hibus_register_procedure(hibus_context_inetd, METHOD_WIFI_CLOSE_DEVICE, NULL, NULL, closeDevice);
+    ret_code = hibus_register_procedure(hibus_context_inetd, METHOD_NET_CLOSE_DEVICE, NULL, NULL, closeDevice);
     if(ret_code)
     {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_CLOSE_DEVICE, hibus_get_err_message(ret_code));
+        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_NET_CLOSE_DEVICE, hibus_get_err_message(ret_code));
         return;
     }
 
-    ret_code = hibus_register_procedure(hibus_context_inetd, METHOD_WIFI_GET_DEVICES_STATUS, NULL, NULL, getNetworkDevicesStatus);
+    ret_code = hibus_register_procedure(hibus_context_inetd, METHOD_NET_GET_DEVICES_STATUS, NULL, NULL, getNetworkDevicesStatus);
     if(ret_code)
     {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_GET_DEVICES_STATUS, hibus_get_err_message(ret_code));
+        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_NET_GET_DEVICES_STATUS, hibus_get_err_message(ret_code));
         return;
     }
 
@@ -377,7 +377,7 @@ void common_revoke(hibus_conn * hibus_context_inetd)
 {
     hibus_revoke_event(hibus_context_inetd, NETWORKDEVICECHANGED);
 
-    hibus_revoke_procedure(hibus_context_inetd, METHOD_WIFI_OPEN_DEVICE);
-    hibus_revoke_procedure(hibus_context_inetd, METHOD_WIFI_CLOSE_DEVICE);
-    hibus_revoke_procedure(hibus_context_inetd, METHOD_WIFI_GET_DEVICES_STATUS);
+    hibus_revoke_procedure(hibus_context_inetd, METHOD_NET_OPEN_DEVICE);
+    hibus_revoke_procedure(hibus_context_inetd, METHOD_NET_CLOSE_DEVICE);
+    hibus_revoke_procedure(hibus_context_inetd, METHOD_NET_GET_DEVICES_STATUS);
 }

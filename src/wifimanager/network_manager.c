@@ -31,9 +31,11 @@ static int  scan_completed = 0;
 
 static int scan_interval = 30;
 
+extern wifi_callback global_callback_func;
+
 int update_scan_results()
 {
-    int i=0;
+    int i = 0;
 
     printf("update scan results enter\n");
 
@@ -201,9 +203,6 @@ void *wifi_scan_thread(void *args)
     char cmd[16] = {0}, reply[16] = {0};
     struct timeval now;
     struct timespec outtime;
-    wifi_callback callback_func;
-
-    memcpy(&callback_func, (wifi_callback *)args, sizeof(wifi_callback));
 
     while(scan_running){
         pthread_mutex_lock(&scan_mutex);
@@ -225,8 +224,10 @@ void *wifi_scan_thread(void *args)
             continue;
         }
 
-        for(i=0;i<WAITING_CLK_COUNTS;i++){
-            if(get_scan_status() == 1){
+        for(i = 0; i < WAITING_CLK_COUNTS; i++)
+        {
+            if(get_scan_status() == 1)
+            {
                 break;
             }
             usleep(100*1000);
@@ -249,8 +250,8 @@ void *wifi_scan_thread(void *args)
             //printf("scan results2\n");
             //printf("%s\n", scan_results);
 
-            if(callback_func.info_callback)
-                callback_func.info_callback(callback_func.device_name, scan_results);
+            if(global_callback_func.info_callback)
+                global_callback_func.info_callback(global_callback_func.device_name, scan_results);
         }
         pthread_mutex_unlock(&scan_mutex);
 

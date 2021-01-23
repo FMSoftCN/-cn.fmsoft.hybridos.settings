@@ -1,63 +1,61 @@
 #ifndef __INETD__H__
 #define __INETD__H__
 
-// only for develop
-#define INETD_CONFIG_FILE   "/home/projects/inetd/bin/inetd.cfg"
-#define INETD_LIBRARY_PATH  "/home/projects/inetd/lib"
+/* Architecture of software layers 
+    runner layer:                           inetd (main.c)
+                                              |
+                      --------------------------------------------------------
+                      |                       |                              |
+    hiBus layer:   mobile.c                 wifi.c                      ethernet.c
+                                              |
+    control layer:                         wifi.so(src/wifi)
+                                              |
+    tools layer(optional):              wifimanager.so
+                                              |
+                                        wpa_client.so
 
-// ================ For WiFi <<<<  =========================================================
-#define HOTSPOT_STRING_LENGTH 64 
+    runner layer: manage each network device and initialize hiBus context.
+    hiBus layer: handle the data from hibus, such as procedure and message.
+    control layer: control the hardware device.
+    tools layer: assistant tools for control if any.
 
-struct _wifi_context
-{
-    const aw_wifi_interface_t * p_wifi_interface;
-    int event_label;
-};
-typedef struct _wifi_context wifi_context;
+    Architecture of structures
+                    |-- type      |-- Ethnet_device (for Ethernet)
+    network_device--|-- device <--|-- WiFi_device (for WiFi)
+                    |-- ifname    |-- Mobile_device (for Mobile)
+*/
 
-typedef struct _wifi_hotspot
-{
-    char bssid[HOTSPOT_STRING_LENGTH];
-    unsigned char ssid[HOTSPOT_STRING_LENGTH];
-    char frenquency[HOTSPOT_STRING_LENGTH];
-    char capabilities[HOTSPOT_STRING_LENGTH];
-    int  signal_strength;
-    bool isConnect;
-    struct _wifi_hotspot * next;
-} wifi_hotspot;
 
-// method for WiFi
-#define METHOD_WIFI_OPEN_DEVICE         "openDevice"
-#define METHOD_WIFI_CLOSE_DEVICE        "closeDevice"
-#define METHOD_WIFI_GET_DEVICES_STATUS  "getNetworkDevicesStatus"
+#include "user_define.h"
+
+// method for All Network Devices 
+#define METHOD_NET_OPEN_DEVICE          "openDevice"
+#define METHOD_NET_CLOSE_DEVICE         "closeDevice"
+#define METHOD_NET_GET_DEVICES_STATUS   "getNetworkDevicesStatus"
+// method for WiFi Device
 #define METHOD_WIFI_START_SCAN          "wifiStartScanHotspots"
 #define METHOD_WIFI_STOP_SCAN           "wifiStopScanHotspots"
 #define METHOD_WIFI_CONNECT_AP          "wifiConnect"
 #define METHOD_WIFI_DISCONNECT_AP       "wifiDisconnect"
-#define METHOD_WIFI_GET_DEVICE_STATUS   "wifiGetDeviceStatus"
+#define METHOD_WIFI_GET_NETWORK_INFO    "wifiGetNetworkInfo"
+// method for Ethernet Device
+// method for Mobile Device
 
-// event for WiFi
+
+// event for All Network Devices
 #define NETWORKDEVICECHANGED            "NETWORKDEVICECHANGED"
+// event for WiFi Device
 #define WIFINEWHOTSPOTS                 "WIFINEWHOTSPOTS"
 #define WIFISIGNALSTRENGTHCHANGED       "WIFISIGNALSTRENGTHCHANGED"
-// ================ >>>> For WiFi  =========================================================
+// event for Ethernet Device
+// event for Mobile Device
 
-
-// ================ For Ethernet  <<<<  ====================================================
-// ================ >>>> For Ethernet  =====================================================
-
-
-// ================ For Mobile  <<<<  ======================================================
-// ================ >>>> For Mobile  =======================================================
-
-
-#define WORKING_DIRECTORY               "/home/gengyue"                     // for daemon
-
+// parameter for inetd runner
 #define APP_NAME_SETTINGS               "cn.fmsoft.hybridos.settings"
 #define RUNNER_NAME_INETD               "inetd"
 #define SOCKET_PATH                     "/var/tmp/hibus.sock"
-
-#define MAX_DEVICE_NUM                  10
+#define MAX_DEVICE_NUM                  10          // maximize of network devices is 10
+#define DEFAULT_SCAN_TIME               30          // for WiFi scan  period
 
 // device type
 #define DEVICE_TYPE_UNKONWN             0
@@ -73,9 +71,6 @@ typedef struct _wifi_hotspot
 #define DEVICE_STATUS_UP                2
 #define DEVICE_STATUS_LINK              3
 #define DEVICE_STATUS_UNLINK            4
-
-// for time period
-#define DEFAULT_SCAN_TIME               30
 
 // for error
 #define ERR_NO                          0
@@ -106,52 +101,83 @@ typedef struct _wifi_hotspot
 #define NETWORK_CHANGED_BROADCAST       ((0x01) << 5)
 #define NETWORK_CHANGED_SUBNETMASK      ((0x01) << 6)
 
-#define NETWORK_DEVICE_NAME_LENGTH  32
-#define NETWORK_ADDRESS_LENGTH      32
-#define WIFI_SSID_LENGTH            32
+// for string length
+#define HOTSPOT_STRING_LENGTH           64 
+#define NETWORK_DEVICE_NAME_LENGTH      32
+#define NETWORK_ADDRESS_LENGTH          32
+#define WIFI_SSID_LENGTH                32
 
-typedef struct _WiFi_device
-{
-    struct _hiWiFiDeviceOps * wifi_device_Ops;
-    wifi_context * context;
-    int scan_time;
-    int signal;
-    char ssid[WIFI_SSID_LENGTH];
-    pthread_mutex_t list_mutex;             // wifi列表读写同步
-    wifi_hotspot *first_hotspot;            // 扫描wifi列表
-    bool start_scan;                        // 是否正在扫描
-} WiFi_device;
+/*
+    Architecture of structures
 
+                    |-- type        according to   |-- Ethnet_device (for Ethernet)
+    network_device--|-- * device <-----------------|-- WiFi_device (for WiFi)
+                    |-- ifname      device type    |-- Mobile_device (for Mobile)
+*/
+
+// network device description
 typedef struct _network_device
 {
-    char ifname[NETWORK_DEVICE_NAME_LENGTH];
-    int type;
-    int status;
-    int priority;
-    void * device;
-    void * lib_handle;
-    char mac[NETWORK_ADDRESS_LENGTH];
-    char ip[NETWORK_ADDRESS_LENGTH];
-    char broadAddr[NETWORK_ADDRESS_LENGTH];
-    char subnetMask[NETWORK_ADDRESS_LENGTH];
-    int speed;
-    hibus_conn* conn;
+    char ifname[NETWORK_DEVICE_NAME_LENGTH];    // device name
+    int type;                                   // device type: DEVICE_TYPE_XXX
+    int status;                                 // device status: DEVICE_STATUS_XXX
+    int priority;                               // device priority
+    void * device;                              // specified structure pointer for a device type. 
+                                                // e.g. WiFi_device structure for WiFi device
+    void * lib_handle;                          // handle of library. e.g. for wifi.so
+    char mac[NETWORK_ADDRESS_LENGTH];           // MAC address
+    char ip[NETWORK_ADDRESS_LENGTH];            // IP address
+    char broadAddr[NETWORK_ADDRESS_LENGTH];     // broadcast address
+    char subnetMask[NETWORK_ADDRESS_LENGTH];    // subnet mask
+    int speed;                                  // network speed
 } network_device;
 
+// WiFi device description
+typedef struct _WiFi_device                     // WiFi device description
+{
+    struct _hiWiFiDeviceOps * wifi_device_Ops;  // the operations for control layer
+    struct _wifi_context * context;             // the context for WiFi control layer 
+    char ssid[WIFI_SSID_LENGTH];                // the ssid of current connecting network
+    int signal;                                 // signal strength for current connecting network
+    int scan_time;                              // the internal time for scan network
+    pthread_mutex_t list_mutex;                 // for hotspots list
+    struct _wifi_hotspot *first_hotspot;        // hotspots list
+    bool start_scan;                            // whether scaning hotspots
+} WiFi_device;
+
+// WiFi AP description
+typedef struct _wifi_hotspot                    // the information for one AP
+{
+    char bssid[HOTSPOT_STRING_LENGTH];          // bssid
+    unsigned char ssid[HOTSPOT_STRING_LENGTH];  // ssid
+    char frenquency[HOTSPOT_STRING_LENGTH];     // frequency
+    char capabilities[HOTSPOT_STRING_LENGTH];   // encrypt type
+    int  signal_strength;                       // signal strength
+    bool isConnect;                             // whether connected
+    struct _wifi_hotspot * next;                // the next node in list
+} wifi_hotspot;
+
+// wifi context of control layer
+typedef struct _wifi_context                    // context get from control layer
+{
+    const aw_wifi_interface_t* p_wifi_interface;// context of tools layer. WiFi is a bit complicated。
+    int event_label;                            // lable code for wifimanager
+} wifi_context;
+
+// interface of libwifi.so
 typedef struct _hiWiFiDeviceOps
 {
-    int (* open) (const char * device_name, wifi_context ** context);
-    int (* close) (wifi_context * context);
+    int (* open) (const char * device_name, wifi_context ** context);           // open wifi device
+    int (* close) (wifi_context * context);                                     // close wifi device
     int (* connect) (wifi_context * context, const char * ssid, const char *password);
     int (* disconnect) (wifi_context * context);
-    int (* get_signal_strength) (wifi_context * context);
     int (* start_scan) (wifi_context * context);
     int (* stop_scan) (wifi_context * context);
-    unsigned int (* get_hotspots) (wifi_context * context, wifi_hotspot ** hotspots);
-    int (*get_cur_net_info)(wifi_context * context, char * reply, int reply_length);                // 获得当前网络连接的各项参数，包括ssid，IP等
-    int (*set_scan_interval)(wifi_context * context, int interval);                                 // 设置scan间隔
-    void (* report_wifi_scan_info)(network_device * device, wifi_hotspot * hotspots, int number);   // 回调函数，上报scan结果
-    network_device * device;                                                                        // 该结构对应的device结构
+    unsigned int (* get_hotspots) (wifi_context * context, wifi_hotspot ** hotspots);       
+    int (*get_cur_net_info)(wifi_context * context, char * reply, int reply_length);
+    int (*set_scan_interval)(wifi_context * context, int interval);
+    void (* report_wifi_scan_info)(network_device * device, wifi_hotspot * hotspots, int number);
+    network_device * device;
 } hiWiFiDeviceOps;
 
 // for test

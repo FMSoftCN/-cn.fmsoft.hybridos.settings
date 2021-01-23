@@ -239,7 +239,7 @@ int main(void)
     for(i = 0; i < NOFILE; i++) // close all file
         close(i);
 
-    chdir(WORKING_DIRECTORY);   // change working directory
+    chdir(DAEMON_WORKING_PATH); // change working directory
     umask(0);					// reset mask
 #endif
 

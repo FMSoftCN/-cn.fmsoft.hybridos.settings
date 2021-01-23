@@ -33,13 +33,19 @@
 
         <hr>
         <p> Step 5: Get Wifi network list, and start scan again.</p>
-        <button id="btnValue5" type="button">call procedure: Start Scan AP </button>
+        <button id="btnValue5" type="button">call procedure: wifiStartScanHotspots </button>
         <p id="APlist"></p> 
         <hr>
 
         <hr>
         <p> Step 6: Connect expected AP.</p>
-        <button id="btnValue6" type="button">call procedure: Connect AP </button>
+        <button id="btnValue6" type="button">call procedure: wifiConnect </button>
+        <p id="connectap"></p> 
+        <hr>
+
+        <hr>
+        <p> Step 7: Get current network infomation.</p>
+        <button id="btnValue7" type="button">call procedure: wifiGetNetworkInfo </button>
         <p id="connectap"></p> 
         <hr>
 
@@ -279,8 +285,7 @@
                     }
                     if(packetJson.errCode == 0)
                     {
-                        var info = "</table>"
-                        document.getElementById("connectap").innerHTML = info;
+                        document.getElementById("connectap").innerHTML = "wifiConnect is OK!";
                     }
                     else
                         document.getElementById("connectap").innerHTML = "wifiConnect is error, because " + packetJson.errMsg;

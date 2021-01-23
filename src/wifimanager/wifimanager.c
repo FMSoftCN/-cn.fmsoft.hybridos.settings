@@ -20,6 +20,7 @@ int  disconnecting = 0;
 int  connecting_ap_event_label = 0;
 int  disconnect_ap_event_label = 0;
 tWIFI_STATE  gwifi_state = WIFIMG_WIFI_DISABLED;
+wifi_callback global_callback_func;
 
 static tWIFI_EVENT  event_code = WIFIMG_NO_NETWORK_CONNECTING;
 static int aw_wifi_disconnect_ap(int event_label);
@@ -41,31 +42,28 @@ static int aw_wifi_add_event_callback(tWifi_event_callback pcb)
 */
 static int aw_wifi_is_ap_connected(char *ssid, int *len)
 {
-
-    if(gwifi_state == WIFIMG_WIFI_DISABLED){
+    if(gwifi_state == WIFIMG_WIFI_DISABLED)
         return -1;
-    }
 
-    if( 4 == wpa_conf_is_ap_connected(ssid, len))
-	return 1;
-    else if( 6 == wpa_conf_is_ap_connected(ssid, len))
-	return 2;
+    if(4 == wpa_conf_is_ap_connected(ssid, len))
+        return 1;
+    else if(6 == wpa_conf_is_ap_connected(ssid, len))
+        return 2;
     else
-	return 0;
+        return 0;
 }
-
 
 static int aw_wifi_scan(int event_label)
 {
     int ret = 0;
     tWIFI_MACHINE_STATE wifi_machine_state;
 
-    if(gwifi_state == WIFIMG_WIFI_DISABLED){
+    if(gwifi_state == WIFIMG_WIFI_DISABLED)
         return -1;
-    }
 
     wifi_machine_state = get_wifi_machine_state();
-    if(wifi_machine_state != CONNECTED_STATE && wifi_machine_state != DISCONNECTED_STATE){
+    if(wifi_machine_state != CONNECTED_STATE && wifi_machine_state != DISCONNECTED_STATE)
+    {
         ret = -1;
         event_code = WIFIMG_DEV_BUSING_EVENT;
         goto end;
@@ -74,18 +72,16 @@ static int aw_wifi_scan(int event_label)
     update_scan_results();
 
 end:
-    if(ret != WIFI_MANAGER_SUCCESS){
+    if(ret != WIFI_MANAGER_SUCCESS)
         call_event_callback_function(event_code, NULL, event_label);
-    }
 
     return ret;
 }
 
 static int aw_wifi_get_scan_results(char *result, int *len)
 {
-    if(gwifi_state == WIFIMG_WIFI_DISABLED){
+    if(gwifi_state == WIFIMG_WIFI_DISABLED)
         return -1;
-    }
 
     if(get_scan_results_inner(result, len) != 0)
     {
@@ -100,23 +96,22 @@ static int aw_wifi_get_scan_results(char *result, int *len)
 int check_wpa_passwd(const char *passwd)
 {
     int result = 0;
-    int i=0;
+    int i = 0;
 
-    if(!passwd || *passwd =='\0'){
+    if(!passwd || *passwd == '\0')
         return 0;
-    }
 
-    for(i=0; passwd[i]!='\0'; i++){
-        /* non printable char */
-        if((passwd[i]<32) || (passwd[i] > 126)){
+    for(i = 0; passwd[i] != '\0'; i++)
+    {
+        if((passwd[i]<32) || (passwd[i] > 126))
+        {
             result = 0;
             break;
         }
     }
 
-    if(passwd[i] == '\0'){
+    if(passwd[i] == '\0')
         result = 1;
-    }
 
     return result;
 }
@@ -129,16 +124,10 @@ static int ssid_app_to_wpa_scan(const char *app_ssid, char *scan_ssid)
     int chinese_in = 0;
 
     if(!app_ssid || !app_ssid[0])
-    {
-        printf("Error: app ssid is NULL!\n");
         return -1;
-    }
 
     if(!scan_ssid)
-    {
-        printf("Error: wpa ssid buf is NULL\n");
         return -1;
-    }
 
     i = 0;
     while(app_ssid[i] != '\0')
@@ -651,7 +640,6 @@ static int wifi_connect_ap_inner(const char *ssid, tKEY_MGMT key_mgmt, const cha
     strncpy(cmd, "ADD_NETWORK", CMD_LEN);
     cmd[CMD_LEN] = '\0';
     ret = wifi_command(cmd, netid2, sizeof(netid2));
-printf("=================================================== command: %s\n", cmd);
     if(ret){
         printf("do add network results error!\n");
         ret = -1;
@@ -667,7 +655,6 @@ printf("=================================================== command: %s\n", cmd)
     }
 
     ret = wifi_command(cmd, reply, sizeof(reply));
-printf("=================================================== command: %s\n", cmd);
     if(ret){
         printf("do set network ssid error!\n");
 
@@ -700,7 +687,6 @@ printf("=================================================== command: %s\n", cmd)
         /* set network psk passwd */
         sprintf(cmd,"SET_NETWORK %s key_mgmt WPA-PSK", netid2);
         ret = wifi_command(cmd, reply, sizeof(reply));
-printf("=================================================== command: %s\n", cmd);
         if(ret){
             printf("do set network key_mgmt WPA-PSK error!\n");
 
@@ -728,7 +714,6 @@ printf("=================================================== command: %s\n", cmd)
 
         sprintf(cmd, "SET_NETWORK %s psk \"%s\"", netid2, passwd);
         ret = wifi_command(cmd, reply, sizeof(reply));
-printf("=================================================== command: %s\n", cmd);
         if(ret){
             printf("do set network psk error!\n");
 
@@ -744,7 +729,6 @@ printf("=================================================== command: %s\n", cmd)
         /* set network  key_mgmt none */
         sprintf(cmd, "SET_NETWORK %s key_mgmt NONE", netid2);
         ret = wifi_command(cmd, reply, sizeof(reply));
-printf("=================================================== command: %s\n", cmd);
         if(ret){
             printf("do set network key_mgmt none error!\n");
 
@@ -760,7 +744,6 @@ printf("=================================================== command: %s\n", cmd)
         /* set network wep_key0 */
         sprintf(cmd, "SET_NETWORK %s wep_key0 %s", netid2, passwd);
         ret = wifi_command(cmd, reply, sizeof(reply));
-printf("=================================================== command: %s\n", cmd);
         if(ret){
             sprintf(cmd, "SET_NETWORK %s wep_key0 \"%s\"", netid2, passwd);
             ret = wifi_command(cmd, reply, sizeof(reply));
@@ -780,7 +763,6 @@ printf("=================================================== command: %s\n", cmd)
         /* set network auth_alg */
         sprintf(cmd, "SET_NETWORK %s auth_alg OPEN SHARED", netid2);
         ret = wifi_command(cmd, reply, sizeof(reply));
-printf("=================================================== command: %s\n", cmd);
         if(ret){
             printf("do set network auth_alg error!\n");
 
@@ -811,7 +793,6 @@ printf("=================================================== command: %s\n", cmd)
     /* set priority for network */
     sprintf(cmd,"SET_NETWORK %s priority %d", netid2, (max_prio+1));
     ret = wifi_command(cmd, reply, sizeof(reply));
-printf("=================================================== command: %s\n", cmd);
     if(ret){
         printf("do set priority error!\n");
 
@@ -827,7 +808,6 @@ printf("=================================================== command: %s\n", cmd)
     /* select network */
     sprintf(cmd, "SELECT_NETWORK %s", netid2);
     ret = wifi_command(cmd, reply, sizeof(reply));
-printf("=================================================== command: %s\n", cmd);
     if(ret){
         printf("do select network error!\n");
 
@@ -843,7 +823,6 @@ printf("=================================================== command: %s\n", cmd)
     /* enable network  gengyue*/
     sprintf(cmd, "ENABLE_NETWORK %s", netid2);
     ret = wifi_command(cmd, reply, sizeof(reply));
-printf("=================================================== command: %s\n", cmd);
     if(ret){
         printf("do select network error!\n");
 
@@ -856,7 +835,6 @@ printf("=================================================== command: %s\n", cmd)
         goto end;
     }
 
-#ifdef gengyue
     /* save netid */
     strcpy(netid_connecting, netid2);
 
@@ -974,7 +952,6 @@ printf("=================================================== command: %s\n", cmd)
         event_code = WIFIMG_NETWORK_NOT_EXIST;
         ret = -1;
     }
-#endif
 end:
     //enable all networks in wpa_supplicant.conf
     wpa_conf_enable_all_networks();
@@ -1705,6 +1682,8 @@ const aw_wifi_interface_t * aw_wifi_on(tWifi_event_callback pcb, int event_label
 {
     int i = 0, ret = -1;
 
+    memcpy(&global_callback_func, (wifi_callback *)callback, sizeof(wifi_callback));
+
     memset(socket_path, 0, PATH_MAX);
     if(path)
         memcpy(socket_path, path, strlen(path));
@@ -1738,9 +1717,7 @@ const aw_wifi_interface_t * aw_wifi_on(tWifi_event_callback pcb, int event_label
     }
 
     gwifi_state = WIFIMG_WIFI_ENABLE;
-
     aw_wifi_add_event_callback(pcb);
-
     wifi_event_loop(NULL);
 
 #ifdef gengyue
@@ -1765,7 +1742,7 @@ const aw_wifi_interface_t * aw_wifi_on(tWifi_event_callback pcb, int event_label
     }
 #endif
 
-    start_wifi_scan_thread(callback);
+    start_wifi_scan_thread(NULL);
 
 #ifdef gengyue
     if(ret != 0){

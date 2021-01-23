@@ -36,139 +36,6 @@ static const char WPA_EVENT_IGNORE[]    = "CTRL-EVENT-IGNORE ";
 
 extern char socket_path[PATH_MAX];
 
-static int insmod(const char *filename, const char *args)
-{
-#if 0
-
-    void *module;
-    unsigned int size;
-    int ret;
-
-    module = load_file(filename, &size);
-    if (!module)
-        return -1;
-
-    ret = init_module(module, size, args);
-
-    free(module);
-
-#else
-
-    int ret = 0;
-    char cmd[256] = {0};
-    sprintf(cmd,"insmod '%s' '%s'", filename, args);
-    system(cmd);
-
-#endif
-    return ret;
-}
-
-static int rmmod(const char *modname)
-{
-#if 0
-
-    int ret = -1;
-    int maxtry = 10;
-
-    while (maxtry-- > 0) {
-        ret = delete_module(modname, O_NONBLOCK | O_EXCL);
-        if (ret < 0 && errno == EAGAIN)
-            usleep(500000);
-        else
-            break;
-    }
-
-    if (ret != 0)
-        printf("Unable to unload driver module \"%s\": %s\n",
-             modname, strerror(errno));
-
-#else
-
-    int ret = 0;
-    char cmd[256] = {0};
-    sprintf(cmd,"rmmod '%s'", modname);
-    system(cmd);
-
-#endif
-    return ret;
-}
-
-#define TIME_COUNT 20 // 200ms*20 = 4 seconds for completion
-int wifi_load_driver(const char *path, const char *args)
-{
-	int  count = 0;
-	int  i=0;
-	int  ret        = 0;
-	char name[256] = {0}, tmp_buf[512] = {0};
-    const char * p_s = NULL, * p_e = NULL;
-    char *p_strstr_wlan  = NULL;
-    FILE *fp        = NULL;
-
-    if (!path) {
-        printf("driver path is NULL!\n");
-        return -1;
-    }
-
-    p_s = strrchr(path, '/');
-    p_s++;
-
-    p_e = strrchr(path, '.');
-    p_e--;
-
-    i = 0;
-    while(p_s <= p_e){
-        name[i] = *p_s;
-        i++;
-        p_s++;
-    }
-    name[i] = '\0';
-    printf("driver name %s\n", name);
-
-    if (insmod(path, args) < 0) {
-        printf("insmod %s %s firmware failed!\n", path, args);
-        rmmod(name);//it may be load driver already,try remove it.
-        return -1;
-    }
-
-    do{
-        fp=fopen("/proc/net/wireless", "r");
-        if (!fp) {
-            printf("failed to fopen file: /proc/net/wireless\n");
-            rmmod(name); //try remove it.
-            return -1;
-        }
-        ret = fread(tmp_buf, sizeof(tmp_buf), 1, fp);
-        if (ret==0){
-            printf("faied to read proc/net/wireless\n");
-        }
-        fclose(fp);
-
-        printf("loading wifi driver...\n");
-        p_strstr_wlan = strstr(tmp_buf, "wlan0");
-        if (p_strstr_wlan != NULL) {
-            break;
-        }
-        usleep(200000);// 200ms
-
-    } while (count++ <= TIME_COUNT);
-
-    if(count > TIME_COUNT) {
-        printf("timeout, register netdevice wlan0 failed.\n");
-        rmmod(name);
-        return -1;
-    }
-    return 0;
-}
-
-int wifi_unload_driver(const char *name)
-{
-    if (rmmod(name) == 0){
-        usleep(2000000);
-	return 0;
-    }else
-	  return -1;
-}
-
 int ensure_entropy_file_exists()
 {
     int ret;
@@ -484,6 +351,7 @@ int wifi_ctrl_recv(char *reply, size_t *reply_len)
      */
     return -2;
 }
+
 
 int wifi_wait_on_socket(char *buf, size_t buflen)
 {

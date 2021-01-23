@@ -387,12 +387,6 @@ static int disconnect(wifi_context * context)
     return ret_code;
 }
 
-static int get_signal_strength(wifi_context * context)
-{
-    int ret_code = 0;
-    return ret_code;
-}
-
 static int start_scan(wifi_context * context)
 {
     int ret_code = 0;
@@ -526,7 +520,6 @@ hiWiFiDeviceOps * __wifi_device_ops_get(void)
     wifiOps.close = close_device;
     wifiOps.connect = connect;
     wifiOps.disconnect = disconnect;
-    wifiOps.get_signal_strength = get_signal_strength;
     wifiOps.stop_scan = stop_scan;
     wifiOps.start_scan = start_scan;
     wifiOps.get_hotspots = get_hotspots;
