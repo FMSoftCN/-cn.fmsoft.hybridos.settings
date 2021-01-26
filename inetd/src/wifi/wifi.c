@@ -158,7 +158,7 @@ static void wifi_event_handle(tWIFI_EVENT wifi_event, void *buf, int event_label
 
         case WIFIMG_OPT_NO_USE_EVENT:
         {
-            printf("operation no use!\n");
+            printf("---------- operation no use!\n");
             event = WIFIMG_OPT_NO_USE_EVENT;
             break;
         }
@@ -340,6 +340,7 @@ static int open_device(const char * device_name, wifi_context ** context)
 static int close_device(wifi_context * context)
 {
     int ret_code = 0;
+    context->event_label++;
     ret_code = aw_wifi_off(context->p_wifi_interface);
     if(ret_code)
         return ERR_CLOSE_WIFI_DEVICE;

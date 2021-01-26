@@ -39,7 +39,24 @@
         procedureArray = new Array();
 
         this.WSStatus = hiBus.WSUNCONNECT; 
-        this.webSocket = new WebSocket("ws://localhost:" + this.port);
+        webSocket = new WebSocket("ws://localhost:" + this.port);
+
+        heartCheck = {
+            timeout: 3000,
+            timeoutObj: null,
+            serverTimeoutObj: null,
+            start: function() {
+                var self = this;
+                this.timeoutObj && clearTimeout(this.timeoutObj);
+                this.serverTimeoutObj && clearTimeout(this.serverTimeoutObj);
+                this.timeoutObj = setTimeout(function() {
+                    webSocket.send("pingpang");
+                    self.serverTimeoutObj = setTimeout(function() {
+                        webSocket.close();
+                    }, self.timeout);
+                }, this.timeout)
+            }
+        }
 
         // generate UUID
         this.genID = function(length) {
@@ -47,12 +64,12 @@
         }
 
         // websocket onopen
-        this.webSocket.onopen = function() {
+        webSocket.onopen = function() {
            WSStatus = hiBus.WSCONNECT;
         };
 
         // websocket onclose
-        this.webSocket.onclose = function(e) {
+        webSocket.onclose = function(e) {
             if(WSStatus == hiBus.WSCONNECT) {
                 if(typeof(connectCallback) == "function") 
                     connectCallback(hiBus.ERRCONNECT);
@@ -70,7 +87,7 @@
         }
 
         // websocket onerror
-        this.webSocket.onerror = function(e) {
+        webSocket.onerror = function(e) {
             if(WSStatus == hiBus.WSCONNECT) {
             }
             else if(WSStatus == hiBus.WSAUTHENRITY) {
@@ -82,7 +99,7 @@
         }
 
         // websocket onmessage
-        this.webSocket.onmessage = function(e) {
+        webSocket.onmessage = function(e) {
             console.log(e.data);
 
             var packetJson;
@@ -117,6 +134,7 @@
                     if(typeof(connectCallback) == "function") 
                         connectCallback(hiBus.ERRNO);
                     WSStatus = hiBus.WSWORKING;
+//                    heartCheck.start();
                 }
                 else if (packetJson.packetType == "authFailed") {
                     this.close();
@@ -241,7 +259,7 @@
                 "authenInfo":{},
                 "parameter":param
             };
-            this.webSocket.send(JSON.stringify(sendJson));
+            webSocket.send(JSON.stringify(sendJson));
 
             return true;
         }
@@ -332,5 +350,6 @@
                             "{\"endpointName\":\"" + endpointName + "\", \"bubbleName\":\"" + eventName + "\"}", 30000, unsubscribeCallback);
             return true;
         }
+
     }
 }

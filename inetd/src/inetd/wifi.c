@@ -94,19 +94,17 @@ char * wifiStartScanHotspots(hibus_conn* conn, const char* from_endpoint, const 
     }
         
     // whether library has been loaded
-    wifi_device = (WiFi_device *)device[index].device;
-    if(wifi_device == NULL)
+    if(device[index].lib_handle == NULL)
     {
         ret_code = ERR_LOAD_LIBRARY;
         goto failed;
     }
-    else
+
+    wifi_device = (WiFi_device *)device[index].device;
+    if(wifi_device->context == NULL)
     {
-        if(wifi_device->context == NULL)
-        {
-            ret_code = ERR_DEVICE_NOT_OPENNED;
-            goto failed;
-        }
+        ret_code = ERR_DEVICE_NOT_OPENNED;
+        goto failed;
     }
 
     if((device[index].status == DEVICE_STATUS_DOWN) || (device[index].status == DEVICE_STATUS_UNCERTAIN))
@@ -210,19 +208,17 @@ char * wifiStopScanHotspots(hibus_conn* conn, const char* from_endpoint, const c
         goto failed;
     }
         
-    wifi_device = (WiFi_device *)device[index].device;
-    if(wifi_device == NULL)
+    if(device[index].lib_handle == NULL)
     {
         ret_code = ERR_LOAD_LIBRARY;
         goto failed;
     }
-    else
+
+    wifi_device = (WiFi_device *)device[index].device;
+    if(wifi_device->context == NULL)
     {
-        if(wifi_device->context == NULL)
-        {
-            ret_code = ERR_DEVICE_NOT_OPENNED;
-            goto failed;
-        }
+        ret_code = ERR_DEVICE_NOT_OPENNED;
+        goto failed;
     }
 
     if((device[index].status == DEVICE_STATUS_DOWN) || (device[index].status == DEVICE_STATUS_UNCERTAIN))
@@ -334,19 +330,17 @@ char * wifiConnect(hibus_conn* conn, const char* from_endpoint, const char* to_m
         goto failed;
     }
 
-    wifi_device = (WiFi_device *)device[index].device;
-    if(wifi_device == NULL)
+    if(device[index].lib_handle == NULL)
     {
         ret_code = ERR_LOAD_LIBRARY;
         goto failed;
     }
-    else
+
+    wifi_device = (WiFi_device *)device[index].device;
+    if(wifi_device->context == NULL)
     {
-        if(wifi_device->context == NULL)
-        {
-            ret_code = ERR_DEVICE_NOT_OPENNED;
-            goto failed;
-        }
+        ret_code = ERR_DEVICE_NOT_OPENNED;
+        goto failed;
     }
 
     if((device[index].status == DEVICE_STATUS_DOWN) || (device[index].status == DEVICE_STATUS_UNCERTAIN))
@@ -433,23 +427,24 @@ char * wifiDisconnect(hibus_conn* conn, const char* from_endpoint, const char* t
         goto failed;
     }
     
-    wifi_device = (WiFi_device *)device[index].device;
-    if(wifi_device == NULL)
+    if(device[index].lib_handle == NULL)
     {
         ret_code = ERR_LOAD_LIBRARY;
         goto failed;
     }
-    else
+
+    wifi_device = (WiFi_device *)device[index].device;
+    if(wifi_device->context == NULL)
     {
-        if(wifi_device->context == NULL)
-        {
-            ret_code = ERR_DEVICE_NOT_OPENNED;
-            goto failed;
-        }
+        ret_code = ERR_DEVICE_NOT_OPENNED;
+        goto failed;
     }
 
-    if((device[index].status != DEVICE_STATUS_DOWN) && (device[index].status != DEVICE_STATUS_UNCERTAIN))
-        ret_code = wifi_device->wifi_device_Ops->disconnect(wifi_device->context);
+    wifi_device->wifi_device_Ops->disconnect(wifi_device->context);
+
+    memset(wifi_device->ssid, 0, WIFI_SSID_LENGTH);
+    wifi_device->signal = 0;
+    wifi_device->start_scan = false;
 
     // remove hot spots list
     wifi_hotspot * node = NULL;
@@ -540,19 +535,17 @@ char * wifiGetNetworkInfo(hibus_conn* conn, const char* from_endpoint, const cha
         goto failed;
     }
     
-    wifi_device = (WiFi_device *)device[index].device;
-    if(wifi_device == NULL)
+    if(device[index].lib_handle == NULL)
     {
         ret_code = ERR_LOAD_LIBRARY;
         goto failed;
     }
-    else
+
+    wifi_device = (WiFi_device *)device[index].device;
+    if(wifi_device->context == NULL)
     {
-        if(wifi_device->context == NULL)
-        {
-            ret_code = ERR_DEVICE_NOT_OPENNED;
-            goto failed;
-        }
+        ret_code = ERR_DEVICE_NOT_OPENNED;
+        goto failed;
     }
 
     ret_code = wifi_device->wifi_device_Ops->get_cur_net_info(wifi_device->context, reply, reply_length);
@@ -591,7 +584,7 @@ char * wifiGetNetworkInfo(hibus_conn* conn, const char* from_endpoint, const cha
             goto failed;
         }
         
-        device[index].status = DEVICE_STATUS_LINK;
+        device[index].status = DEVICE_STATUS_RUNNING;
 
         // device name
         sprintf(ret_string + strlen(ret_string), "\"device\":\"%s\",", device_name);
@@ -631,6 +624,9 @@ char * wifiGetNetworkInfo(hibus_conn* conn, const char* from_endpoint, const cha
                 memcpy(content, tempstart, tempend - tempstart);
         }
         sprintf(ret_string + strlen(ret_string), "\"ssid\":\"%s\",", content);
+        memset(wifi_device->ssid, 0, WIFI_SSID_LENGTH);
+        sprintf(wifi_device->ssid, "%s", content);
+
 
         // encryptionType
         memset(content, 0, 64);
@@ -655,6 +651,8 @@ char * wifiGetNetworkInfo(hibus_conn* conn, const char* from_endpoint, const cha
                 memcpy(content, tempstart, tempend - tempstart);
         }
         sprintf(ret_string + strlen(ret_string), "\"ip\":\"%s\",", content);
+        memset(device[index].ip, 0, NETWORK_ADDRESS_LENGTH);
+        sprintf(device[index].ip, "%s", content);
 
         // mac
         memset(content, 0, 64);
@@ -667,14 +665,16 @@ char * wifiGetNetworkInfo(hibus_conn* conn, const char* from_endpoint, const cha
                 memcpy(content, tempstart, tempend - tempstart);
         }
         sprintf(ret_string + strlen(ret_string), "\"mac\":\"%s\",", content);
+        memset(device[index].mac, 0, NETWORK_ADDRESS_LENGTH);
+        sprintf(device[index].mac, "%s", content);
 
         // speed
-        sprintf(ret_string + strlen(ret_string), "\"speed\":\"%d Mbps\"", device[index].speed);
+        sprintf(ret_string + strlen(ret_string), "\"speed\":\"%d Mbps\",", device[index].speed);
 
         // gate way
 
         // singal
-
+        sprintf(ret_string + strlen(ret_string), "\"signalStrength\":%d", wifi_device->signal);
     }
 
 failed:
@@ -698,7 +698,6 @@ void report_wifi_scan_info(network_device * device, wifi_hotspot * hotspots, int
     if(device == NULL)
         return;
 
-printf("============================================================================================================= send signal message.\n");
     // according to signal strength, order the list
     if(number > 1)
     {
@@ -728,6 +727,29 @@ printf("========================================================================
     }
     
     wifi_device = (WiFi_device *)(device->device);
+    // the connected ssid is the first
+    if(strlen(wifi_device->ssid))
+    {
+        node = hotspots;
+        while(node)
+        {
+            if(strcmp((char *)wifi_device->ssid, (char *)node->ssid) == 0)
+            {
+                if(node != hotspots)
+                {
+                    nodecopynext = node->next;
+                    node->next = hotspots->next;
+                    hotspots->next = nodecopynext;
+
+                    memcpy(&nodecopy, node, sizeof(wifi_hotspot));
+                    memcpy(node, hotspots, sizeof(wifi_hotspot));
+                    memcpy(hotspots, &nodecopy, sizeof(wifi_hotspot));
+                    break;
+                }
+            }
+            node = node->next;
+        }
+    }
 
     // set hotspots list
     pthread_mutex_lock(&(wifi_device->list_mutex));
@@ -744,15 +766,18 @@ printf("========================================================================
     // send the message
     char message[8192];
     int i = 0;
-//    if(hotspots && wifi_device->ssid[0] && strcmp((char *)wifi_device->ssid, (char *)hotspots->ssid) == 0)
-//    {
+    // send WIFISIGNALSTRENGTHCHANGED message
+    if(hotspots && wifi_device->ssid[0] && strcmp((char *)wifi_device->ssid, (char *)hotspots->ssid) == 0)
+    {
+        wifi_device->signal = hotspots->signal_strength;
         memset(message, 0, 8192);
         sprintf(message, "{\"ssid\":\"%s\", \"signalStrength\":%d}", hotspots->ssid, hotspots->signal_strength);
         hibus_fire_event(hibus_context_inetd, WIFISIGNALSTRENGTHCHANGED, message);
-//    }
+    }
 
-//    if(wifi_device->start_scan)
-//    {
+    // if scan ap, send WIFINEWHOTSPOTS message
+    if(wifi_device->start_scan)
+    {
         memset(message, 0, 8192);
         sprintf(message, "{\"data\":[");
 
@@ -775,7 +800,7 @@ printf("========================================================================
         sprintf(message + strlen(message), "]}"); 
         hibus_fire_event(hibus_context_inetd, WIFINEWHOTSPOTS, message);
         wifi_device->start_scan = false;
-//    }
+    }
 
 }
 

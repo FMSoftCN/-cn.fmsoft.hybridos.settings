@@ -102,35 +102,57 @@ char * openDevice(hibus_conn* conn, const char* from_endpoint, const char* to_me
         goto failed;
     }
 
+    // whether openned
+    if(device[index].lib_handle)
+    {
+        ret_code = ERR_NO;
+        goto failed;
+    }
+
+    // load the library
+    if(load_device_library(&device[index]))
+    {
+        ret_code = ERR_LOAD_LIBRARY;
+        goto failed;
+    }
+
+    get_if_info(&device[index]);
+
     if(device[index].type == DEVICE_TYPE_WIFI)
     {
-        // whether library has been loaded
+        int loop = 0;
         wifi_device = (WiFi_device *)device[index].device;
-        if(wifi_device == NULL)
+
+        // if the interface is down, up it now
+        if((device[index].status == DEVICE_STATUS_DOWN) || (device[index].status == DEVICE_STATUS_UNCERTAIN))
         {
-            ret_code = ERR_LOAD_LIBRARY;
+            ret_code = ERR_OPEN_WIFI_DEVICE;
+            if(ifconfig_helper(device_name, 1))
+                goto failed;
+        }
+
+        get_if_info(&device[index]);
+        while((device[index].status != DEVICE_STATUS_UP) && (device[index].status != DEVICE_STATUS_RUNNING))
+        {
+            if(loop > 200)
+                break;
+            usleep(10000);
+            get_if_info(&device[index]);
+        }
+    
+        if((device[index].status != DEVICE_STATUS_UP) && (device[index].status != DEVICE_STATUS_RUNNING))
+        {
+            ret_code = ERR_OPEN_WIFI_DEVICE;
             goto failed;
         }
-        else
-        {
-            // if the interface is down, up it now
-            if((device[index].status == DEVICE_STATUS_DOWN) || (device[index].status == DEVICE_STATUS_UNCERTAIN))
-            {
-                ret_code = ERR_OPEN_WIFI_DEVICE;
-                if(ifconfig_helper(device_name, 1))
-                    goto failed;
-            }
 
-            // if the device is not openned
-            ret_code = ERR_NO;
-            if(wifi_device->context == NULL)
-                ret_code = wifi_device->wifi_device_Ops->open(device_name, &(wifi_device->context));
-            if(ret_code != 0)
-                goto failed;
+        // if the device is not openned
+        ret_code = ERR_NO;
+        ret_code = wifi_device->wifi_device_Ops->open(device_name, &(wifi_device->context));
+        if(ret_code != 0)
+            goto failed;
 
-            get_if_info(&device[index]);
-            wifi_device->wifi_device_Ops->set_scan_interval(wifi_device->context, wifi_device->scan_time);
-        }
+        wifi_device->wifi_device_Ops->set_scan_interval(wifi_device->context, wifi_device->scan_time);
     }
     else if(device[index].type == DEVICE_TYPE_ETHERNET)
     {
@@ -209,6 +231,13 @@ char * closeDevice(hibus_conn* conn, const char* from_endpoint, const char* to_m
         goto failed;
     }
 
+    // whether closed 
+    if(device[index].lib_handle == NULL)
+    {
+        ret_code = ERR_NO;
+        goto failed;
+    }
+
     if(device[index].type == DEVICE_TYPE_WIFI)
     {
         // whether library has been loaded
@@ -221,20 +250,27 @@ char * closeDevice(hibus_conn* conn, const char* from_endpoint, const char* to_m
         else
         {
             // if the device is openned
-            ret_code = ERR_NO;
-            if(wifi_device->context)
-            {
-                ret_code = wifi_device->wifi_device_Ops->close(wifi_device->context);
-                wifi_device->context = NULL;
-            }
-            // if the interface is active
-            if((device[index].status == DEVICE_STATUS_LINK) || (device[index].status == DEVICE_STATUS_UNLINK))
-            {
-                ret_code = ERR_CLOSE_WIFI_DEVICE;
-                if(ifconfig_helper(device_name, 0))
-                    goto failed;
-            }
+            wifi_device->wifi_device_Ops->disconnect(wifi_device->context);
+            wifi_device->wifi_device_Ops->close(wifi_device->context);
 
+            // reset hotspots list
+            wifi_hotspot * node = NULL;
+            wifi_hotspot * tempnode = NULL;
+
+            pthread_mutex_lock(&(wifi_device->list_mutex));
+            node = wifi_device->first_hotspot;
+            while(node)
+            {
+                tempnode = node->next;
+                free(node);
+                node = tempnode;
+            }
+            wifi_device->first_hotspot = NULL;
+            pthread_mutex_unlock(&(wifi_device->list_mutex));
+            wifi_device->context = NULL;
+            wifi_device->wifi_device_Ops = NULL;
+
+            get_if_info(&device[index]);
         }
     }
     else if(device[index].type == DEVICE_TYPE_ETHERNET)
@@ -243,6 +279,7 @@ char * closeDevice(hibus_conn* conn, const char* from_endpoint, const char* to_m
         if(ifconfig_helper(device_name, 0))
             goto failed;
         ret_code = ERR_NO;
+        device[index].status = DEVICE_STATUS_DOWN;
     }
     else if(device[index].type == DEVICE_TYPE_MOBILE)
     {
@@ -250,10 +287,17 @@ char * closeDevice(hibus_conn* conn, const char* from_endpoint, const char* to_m
         if(ifconfig_helper(device_name, 0))
             goto failed;
         ret_code = ERR_NO;
+        device[index].status = DEVICE_STATUS_DOWN;
     }
     else
+    {
         ret_code = ERR_DEVICE_TYPE; 
+        device[index].status = DEVICE_STATUS_DOWN;
+    }
 
+    dlclose(device[index].lib_handle);
+    device[index].lib_handle = NULL;
+//    ifconfig_helper(device_name, 0);
 failed:
     if(jo)
         json_object_put (jo);
@@ -290,6 +334,9 @@ char * getNetworkDevicesStatus(hibus_conn* conn, const char* from_endpoint, cons
 
     for(i = 0; i < MAX_DEVICE_NUM; i++)
     {
+        // get interface information
+        get_if_info(&device[i]);
+
         if(device[i].ifname[0])
         {
             if(device[i].type == DEVICE_TYPE_WIFI)
@@ -307,10 +354,10 @@ char * getNetworkDevicesStatus(hibus_conn* conn, const char* from_endpoint, cons
                 status = "down";
             else if(device[i].status == DEVICE_STATUS_UP)
                 status = "up";
-            else if(device[i].status == DEVICE_STATUS_LINK)
+            else if(device[i].status == DEVICE_STATUS_RUNNING)
                 status = "link";
             else
-                status = "unlink";
+                status = "down";
 
             if(!first)
             {

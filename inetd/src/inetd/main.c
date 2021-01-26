@@ -32,81 +32,14 @@
 #undef  DAEMON
 //#define DAEMON
 
-extern void report_wifi_scan_info(network_device * device_name, wifi_hotspot * hotspots, int number);
 hibus_conn * hibus_context_inetd = NULL;
-
-static int load_device_library(network_device * device, int device_index, char * lib_name)
-{
-    char library_path[MAX_PATH];
-    void * library_handle = NULL;               // handle of loaded library
-	char * library_error = NULL;                // the error message during loading
-
-    memset(library_path, 0, MAX_PATH);
-    sprintf(library_path, "%s/%s", INETD_LIBRARY_PATH, lib_name);
-
-    if((access(library_path, F_OK)) == -1)   
-    {   
-        fprintf(stderr, "INETD: library file %s does not exist, ignore it!", library_path);
-        return -1;
-    }
-
-    library_handle = dlopen(library_path, RTLD_LAZY);  
-    if(!library_handle) 
-    {
-        fprintf (stderr, "INETD: load %s error: %s\n", library_path, dlerror());
-        return -1;
-    }
-
-    if(device[device_index].type == DEVICE_TYPE_WIFI)
-    {
-	    hiWiFiDeviceOps * (* __wifi_device_ops_get)(void);   // get all invoke functions 
-        hiWiFiDeviceOps * wifi_device_Ops = NULL;
-
-        __wifi_device_ops_get = (hiWiFiDeviceOps * (*) (void))dlsym(library_handle, "__wifi_device_ops_get");
-        if((library_error = dlerror()) != NULL)
-        {
-            fprintf(stderr, "INETD: get wifi_init pointer error: %s\n", library_error);
-            dlclose(library_handle);
-            return -1;
-        }
-        wifi_device_Ops = __wifi_device_ops_get();
-
-        if(wifi_device_Ops)
-        {
-            wifi_device_Ops->report_wifi_scan_info = report_wifi_scan_info;
-            wifi_device_Ops->device = &device[device_index];
-
-            WiFi_device * wifi_device = malloc(sizeof(WiFi_device));
-            if(wifi_device)
-            {
-                memset(wifi_device, 0, sizeof(WiFi_device));
-                wifi_device->wifi_device_Ops = wifi_device_Ops;
-                pthread_mutex_init(&wifi_device->list_mutex, NULL);
-                device[device_index].device = (void *)wifi_device;
-                device[device_index].lib_handle = library_handle;
-            }
-            else
-            {
-                dlclose(library_handle);
-                return -1;
-            }
-        }
-        else
-        {
-            dlclose(library_handle);
-            return -1;
-        }
-    }
-
-    return 0;
-}
 
 static int init_from_etc_file(network_device * device, int device_num)
 {
     int i = 0;
     int result = 0;
     int device_index = 0;
-    int library_load_num = 0;
+//    int library_load_num = 0;
 
     char config_path[MAX_PATH];             // configure file full path
     char config_item[64];
@@ -154,12 +87,16 @@ static int init_from_etc_file(network_device * device, int device_num)
                 if(GetValueFromEtcFile(config_path, config_item, "engine", config_content, ETC_MAXLINE) == ETC_OK)
                 {
                     // load library
-                    if(load_device_library(device, device_index, config_content) == 0)
-                    {
-                        library_load_num++;
+                    sprintf(device[device_index].libpath, "%s", config_content);
+//                    if(load_device_library(device, device_index, config_content) == 0)
+//                    {
+//                        library_load_num++;
                         if(result == DEVICE_TYPE_WIFI)
                         {
-                            WiFi_device * wifi_device = (WiFi_device *)device[device_index].device;
+                            WiFi_device * wifi_device = malloc(sizeof(WiFi_device));
+                            memset(wifi_device, 0, sizeof(WiFi_device));
+                            device[device_index].device = (void *)wifi_device;
+//                            WiFi_device * wifi_device = (WiFi_device *)device[device_index].device;
 
                             sprintf(config_path, "%s", INETD_CONFIG_FILE);
                             GetIntValueFromEtcFile(config_path, config_item, "priority", &(device[device_index].priority));
@@ -188,9 +125,9 @@ static int init_from_etc_file(network_device * device, int device_num)
                         else if(result == DEVICE_TYPE_MOBILE)
                         {
                         }
-                    }
-                    else
-                        fprintf(stderr, "WIFI DAEMON: can not load library %s.\n", config_content);
+//                    }
+//                    else
+//                        fprintf(stderr, "WIFI DAEMON: can not load library %s.\n", config_content);
                 }
                 else
                     fprintf(stderr, "WIFI DAEMON: can not get library name for %s.\n", config_item);
@@ -205,7 +142,8 @@ static int init_from_etc_file(network_device * device, int device_num)
         sprintf(config_item, "device%d_name", i);
     }
     
-    return library_load_num;
+//    return library_load_num;
+    return 0;
 }
 
 int main(void)
@@ -253,11 +191,12 @@ int main(void)
     }
 
     // step 2: get library setting from configure file
-    if(init_from_etc_file(device, device_num) == 0)
-    {
-        fprintf(stderr, "WIFI DAEMON: can not load any library, exit.\n");
-        exit(1);
-    }
+    init_from_etc_file(device, device_num);
+//    if(init_from_etc_file(device, device_num) == 0)
+//    {
+//        fprintf(stderr, "WIFI DAEMON: can not load any library, exit.\n");
+//        exit(1);
+//    }
 
     // step 3: connect to hibus server
     for(i = 0; i < device_num; i++)

@@ -303,13 +303,15 @@ void resume_wifi_scan_thread()
 
 void stop_wifi_scan_thread()
 {
-	  scan_running = 0;
-	  usleep(200*1000);
-	  pthread_join(scan_thread_id, NULL);
+    scan_running = 0;
+//    usleep(200*1000);
+    pthread_cond_signal(&thread_run_cond);
+    pthread_cond_signal(&scan_cond);
+    pthread_join(scan_thread_id, NULL);
 
-      pthread_cond_destroy(&thread_run_cond);
-      pthread_mutex_destroy(&thread_run_mutex);
+    pthread_cond_destroy(&thread_run_cond);
+    pthread_mutex_destroy(&thread_run_mutex);
 
-      pthread_cond_destroy(&scan_cond);
-	  pthread_mutex_destroy(&scan_mutex);
+    pthread_cond_destroy(&scan_cond);
+    pthread_mutex_destroy(&scan_mutex);
 }

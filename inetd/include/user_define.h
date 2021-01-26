@@ -2,8 +2,8 @@
 #define __USER_DEFINE__H__
 
 // only for develop
-#define INETD_CONFIG_FILE   "/home/projects/inetd/bin/inetd.cfg"
-#define INETD_LIBRARY_PATH  "/home/projects/inetd/lib"
+#define INETD_CONFIG_FILE   "/home/projects/cn.fmsoft.hybridos.settings/inetd/bin/inetd.cfg"
+#define INETD_LIBRARY_PATH  "/home/projects/cn.fmsoft.hybridos.settings/inetd/lib"
 #define DAEMON_WORKING_PATH "/home/gengyue" 
 
 // dhcp command in user board

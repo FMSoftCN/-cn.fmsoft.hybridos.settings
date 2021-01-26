@@ -363,10 +363,8 @@ int wifi_wait_on_socket(char *buf, size_t buflen)
         return snprintf(buf, buflen, WPA_EVENT_TERMINATING " - connection closed");
     }
 
-printf("============================================================================ 1111111111 before\n");
     result = wifi_ctrl_recv(buf, &nread);
 
-printf("============================================================================ 1111111111 after\n");
     /* Terminate reception on exit socket */
     if (result == -2) {
         return snprintf(buf, buflen, WPA_EVENT_TERMINATING " - connection closed");

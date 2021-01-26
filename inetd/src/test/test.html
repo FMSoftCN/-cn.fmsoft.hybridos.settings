@@ -22,12 +22,12 @@
         <hr>
         <p> Step 3: Open one WiFi device, inetd start scan thread.</p>
         <button id="btnValue3" type="button">call procedure: openDevice </button>
-        <p id="openDevice"></p> 
+        <p id="opendevice"></p> 
         <hr>
 
         <hr>
-        <p> Step 4: Get Selected Wifi device status.</p>
-        <button id="btnValue4" type="button">call procedure: wifiGetDeviceStatus </button>
+        <p> Step 4: Get current information via select WiFi device.</p>
+        <button id="btnValue4" type="button">call procedure: wifiGetNetworkInfo </button>
         <p id="devicenetwork"></p> 
         <hr>
 
@@ -44,9 +44,15 @@
         <hr>
 
         <hr>
-        <p> Step 7: Get current network infomation.</p>
-        <button id="btnValue7" type="button">call procedure: wifiGetNetworkInfo </button>
-        <p id="connectap"></p> 
+        <p> Step 7: Disconnect WiFi.</p>
+        <button id="btnValue7" type="button">call procedure: wifiDisconnect</button>
+        <p id="disconnectap"></p> 
+        <hr>
+
+        <hr>
+        <p> Step 8: Close WiFi device.</p>
+        <button id="btnValue8" type="button">call procedure: closeDevice</button>
+        <p id="closedevice"></p> 
         <hr>
 
         <hr>
@@ -82,6 +88,8 @@
             var yourAppName = "cn.fmsoft.hybridos.sysmgr"; 
             var yourRunnerName = "gui";
             var yourWiFiDeviceName = "wlp5s0";
+            var yourWiFiSSID = "fmsoft_dev_7";
+            var yourWiFiPassword = "suzhoujie123456";
 
             // do not change these variables
             var myHiBus = null;
@@ -170,10 +178,10 @@
                     }
                     if(packetJson.errCode == 0)
                     {
-                        document.getElementById("openDevice").innerHTML = "Open WiFi Device is OK!";
+                        document.getElementById("opendevice").innerHTML = "Open WiFi Device is OK!";
                     }
                     else
-                        document.getElementById("openDevice").innerHTML = "openDevice is error, because " + packetJson.errMsg;
+                        document.getElementById("opendevice").innerHTML = "openDevice is error, because " + packetJson.errMsg;
                 }
             }
 
@@ -185,8 +193,8 @@
             }
 
 
-            // to call procedure: wifiGetDeviceStatus 
-            function wifiGetDeviceStatusCallback(result)
+            // to call procedure: wifiGetNetworkInfo 
+            function wifiGetNetworkInfoCallback(result)
             {
                 // error in hibus
                 if(typeof(result) == "number")
@@ -205,23 +213,23 @@
                     if(packetJson.errCode == 0)
                     {
                         var info = "<table border=\"1\"> <tr> <th>device</th> <th>bssid</th> <th>ssid</th> <th>Encrption</th>"  
-                                    + "<th>IP</th> <th>MAC</th> <th>Speed</th> <th>Frequency</th> </tr>";
+                                    + "<th>IP</th> <th>MAC</th> <th>Speed</th> <th>Frequency</th> <th>Singal</th></tr>";
                         info += "<tr><td>" + packetJson.data.device + "</td><td>"  + packetJson.data.bssid + "</td><td>"  +  
                                     packetJson.data.ssid + "</td><td>"  + packetJson.data.encryptionType + "</td><td>" + 
                                     packetJson.data.ip + "</td><td>" + packetJson.data.mac + "</td><td>" + packetJson.data.speed + 
-                                    "</td><td>" + packetJson.data.frenquency + "</td></tr>"
+                                    "</td><td>" + packetJson.data.frenquency + "</td><td>" + packetJson.data.signalStrength + "</td></tr>"
                         document.getElementById("devicenetwork").innerHTML = info;
                     }
                     else
-                        document.getElementById("devicenetwork").innerHTML = "wifiGetDeviceStatus is error, because " + packetJson.errMsg;
+                        document.getElementById("devicenetwork").innerHTML = "wifiGetNetworkInfo is error, because " + packetJson.errMsg;
                 }
             }
 
-            function toGetWiFiDeviceStatus()
+            function toWifiGetNetworkInfo()
             {
                 if(myHiBus != null)
-                    myHiBus.callProcedure(endpointName, "wifiGetDeviceStatus", "{\"device\":\"" + yourWiFiDeviceName + "\"}", 1000, 
-                                        wifiGetDeviceStatusCallback);
+                    myHiBus.callProcedure(endpointName, "wifiGetNetworkInfo", "{\"device\":\"" + yourWiFiDeviceName + "\"}", 1000, 
+                                        wifiGetNetworkInfoCallback);
             }
 
 
@@ -296,10 +304,77 @@
             {
                 if(myHiBus != null)
                     myHiBus.callProcedure(endpointName, "wifiConnect", 
-                                        "{\"device\":\"" + yourWiFiDeviceName + "\", \"ssid\":\"fmsoft_dev_7\", \"password\":\"suzhoujie123456\","
+                                        "{\"device\":\"" + yourWiFiDeviceName + "\", \"ssid\":\"" + yourWiFiSSID + 
+                                        "\", \"password\":\"" + yourWiFiPassword + "\","
                                         + "\"autoConnect\":true, \"default\":true}", 1000, connectAPCallback);
             }
 
+
+            // to call procedure: wifiDisconnect 
+            function disconnectAPCallback(result)
+            {
+                // error in hibus
+                if(typeof(result) == "number")
+                {
+                    console.log("An error occurs in hiBus communication. Error code is " + result);
+                }
+                else if(typeof(result) == "string")
+                {
+                    var packetJson;
+                    try {
+                        packetJson = JSON.parse(result);
+                    } catch (e) {
+                        console.log(e.message);
+                        return;
+                    }
+                    if(packetJson.errCode == 0)
+                    {
+                        document.getElementById("disconnectap").innerHTML = "wifiDisconnect is OK!";
+                    }
+                    else
+                        document.getElementById("disconnectap").innerHTML = "wifiDisconnect is error, because " + packetJson.errMsg;
+                }
+            }
+
+            function toDisconnectAP()
+            {
+                if(myHiBus != null)
+                    myHiBus.callProcedure(endpointName, "wifiDisconnect", "{\"device\":\"" + yourWiFiDeviceName + "\"}", 1000, disconnectAPCallback);
+            }
+
+
+            // to call procedure: closeDevice 
+            function closeDeviceCallback(result)
+            {
+                // error in hibus
+                if(typeof(result) == "number")
+                {
+                    console.log("An error occurs in hiBus communication. Error code is " + result);
+                }
+                else if(typeof(result) == "string")
+                {
+                    var packetJson;
+                    try {
+                        packetJson = JSON.parse(result);
+                    } catch (e) {
+                        console.log(e.message);
+                        return;
+                    }
+                    if(packetJson.errCode == 0)
+                    {
+                        document.getElementById("closedevice").innerHTML = "WiFi Device is Closed!";
+                    }
+                    else
+                        document.getElementById("closedevice").innerHTML = "closeDevice is error, because " + packetJson.errMsg;
+                }
+            }
+
+            function toCloseDevice()
+            {
+                if(myHiBus != null)
+                    myHiBus.callProcedure(endpointName, "closeDevice", "{\"device\":\"" + yourWiFiDeviceName + "\"}", 1000, 
+                                        closeDeviceCallback);
+            }
 
 
 
@@ -413,9 +488,11 @@
             document.getElementById("btnValue1").onclick = toStart;
             document.getElementById("btnValue2").onclick = toGetDevice;
             document.getElementById("btnValue3").onclick = toOpenDevice;
-            document.getElementById("btnValue4").onclick = toGetWiFiDeviceStatus;
+            document.getElementById("btnValue4").onclick = toWifiGetNetworkInfo;
             document.getElementById("btnValue5").onclick = toStartScanAP;
             document.getElementById("btnValue6").onclick = toConnectAP;
+            document.getElementById("btnValue7").onclick = toDisconnectAP;
+            document.getElementById("btnValue8").onclick = toCloseDevice;
 
             document.getElementById("btnValue11").onclick = toSubscribeSignal;
             document.getElementById("btnValue12").onclick = toUnsubscribeSignal;

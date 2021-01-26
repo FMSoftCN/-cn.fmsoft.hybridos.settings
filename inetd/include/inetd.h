@@ -66,11 +66,10 @@
 #define DEVICE_TYPE_DEFAULT             DEVICE_TYPE_ETHERNET
 
 // device status
-#define DEVICE_STATUS_UNCERTAIN         0
-#define DEVICE_STATUS_DOWN              1
-#define DEVICE_STATUS_UP                2
-#define DEVICE_STATUS_LINK              3
-#define DEVICE_STATUS_UNLINK            4
+#define DEVICE_STATUS_UNCERTAIN         0           // uncertain
+#define DEVICE_STATUS_DOWN              1           // device is unactive
+#define DEVICE_STATUS_UP                2           // device is active, but perhaps do not connect to any network
+#define DEVICE_STATUS_RUNNING           3           // device is active and has ip address
 
 // for error
 #define ERR_NO                          0
@@ -120,16 +119,17 @@ typedef struct _network_device
 {
     char ifname[NETWORK_DEVICE_NAME_LENGTH];    // device name
     int type;                                   // device type: DEVICE_TYPE_XXX
-    int status;                                 // device status: DEVICE_STATUS_XXX
+    unsigned int status;                        // device status: DEVICE_STATUS_XXX
     int priority;                               // device priority
     void * device;                              // specified structure pointer for a device type. 
                                                 // e.g. WiFi_device structure for WiFi device
-    void * lib_handle;                          // handle of library. e.g. for wifi.so
     char mac[NETWORK_ADDRESS_LENGTH];           // MAC address
     char ip[NETWORK_ADDRESS_LENGTH];            // IP address
     char broadAddr[NETWORK_ADDRESS_LENGTH];     // broadcast address
     char subnetMask[NETWORK_ADDRESS_LENGTH];    // subnet mask
     int speed;                                  // network speed
+    char libpath[HOTSPOT_STRING_LENGTH];        // library path
+    void * lib_handle;                          // handle of library. e.g. for wifi.so
 } network_device;
 
 // WiFi device description
