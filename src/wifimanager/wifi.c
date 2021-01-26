@@ -215,7 +215,7 @@ int ensure_config_file_exists(const char *config_file)
 
 int wifi_start_supplicant(int p2p_supported)
 {
-    char cmd[512] = {0};
+//    char cmd[512] = {0};
 
     /* Before starting the daemon, make sure its config file exists */
     if (ensure_config_file_exists(SUPP_CONFIG_FILE) < 0) {
