@@ -220,6 +220,13 @@ char * closeDevice(hibus_conn* conn, const char* from_endpoint, const char* to_m
         }
         else
         {
+            // if the device is openned
+            ret_code = ERR_NO;
+            if(wifi_device->context)
+            {
+                ret_code = wifi_device->wifi_device_Ops->close(wifi_device->context);
+                wifi_device->context = NULL;
+            }
             // if the interface is active
             if((device[index].status == DEVICE_STATUS_LINK) || (device[index].status == DEVICE_STATUS_UNLINK))
             {
@@ -228,13 +235,6 @@ char * closeDevice(hibus_conn* conn, const char* from_endpoint, const char* to_m
                     goto failed;
             }
 
-            // if the device is openned
-            ret_code = ERR_NO;
-            if(wifi_device->context)
-            {
-                ret_code = wifi_device->wifi_device_Ops->close(wifi_device->context);
-                wifi_device->context = NULL;
-            }
         }
     }
     else if(device[index].type == DEVICE_TYPE_ETHERNET)

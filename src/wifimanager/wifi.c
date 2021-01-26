@@ -234,16 +234,16 @@ int wifi_start_supplicant(int p2p_supported)
     exit_sockets[0] = exit_sockets[1] = -1;
 
     /* start wpa_supplicant */
-    strncpy(cmd, "/etc/wifi/wifi start", 511);
-    cmd[511] = '\0';
-    system(cmd);
+//    strncpy(cmd, "/etc/wifi/wifi start", 511);            // gengyue
+//    cmd[511] = '\0';
+//    system(cmd);
 
     return 0;
 }
 
 int wifi_stop_supplicant(int p2p_supported)
 {
-	  system("/etc/wifi/wifi stop");
+//	  system("/etc/wifi/wifi stop");                        // gengyue
 	  return 0;
 }
 
@@ -363,8 +363,10 @@ int wifi_wait_on_socket(char *buf, size_t buflen)
         return snprintf(buf, buflen, WPA_EVENT_TERMINATING " - connection closed");
     }
 
+printf("============================================================================ 1111111111 before\n");
     result = wifi_ctrl_recv(buf, &nread);
 
+printf("============================================================================ 1111111111 after\n");
     /* Terminate reception on exit socket */
     if (result == -2) {
         return snprintf(buf, buflen, WPA_EVENT_TERMINATING " - connection closed");

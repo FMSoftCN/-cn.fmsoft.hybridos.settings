@@ -555,19 +555,43 @@ char * wifiGetNetworkInfo(hibus_conn* conn, const char* from_endpoint, const cha
         }
     }
 
-    if(device[index].status != DEVICE_STATUS_LINK)
-    {
-        ret_code = ERR_DEVICE_NOT_CONNECT;
-        goto failed;
-    }
-
     ret_code = wifi_device->wifi_device_Ops->get_cur_net_info(wifi_device->context, reply, reply_length);
+
 
     if(ret_code == 0)
     {
         char * tempstart = NULL;
         char * tempend = NULL;
         char content[64];
+
+        memset(content, 0, 64);
+        tempstart = strstr(reply, "wpa_state=");
+        if(tempstart)
+        {
+            tempstart += strlen("wpa_state=");
+            tempend = strstr(tempstart, "\n");
+            if(tempend)
+            {
+                memcpy(content, tempstart, tempend - tempstart);
+                if(strncasecmp(content, "COMPLETED", strlen("COMPLETED")))
+                {
+                    ret_code = ERR_DEVICE_NOT_CONNECT;
+                    goto failed;
+                }
+            }
+            else
+            {
+                ret_code = ERR_DEVICE_NOT_CONNECT;
+                goto failed;
+            }
+        }
+        else
+        {
+            ret_code = ERR_DEVICE_NOT_CONNECT;
+            goto failed;
+        }
+        
+        device[index].status = DEVICE_STATUS_LINK;
 
         // device name
         sprintf(ret_string + strlen(ret_string), "\"device\":\"%s\",", device_name);
