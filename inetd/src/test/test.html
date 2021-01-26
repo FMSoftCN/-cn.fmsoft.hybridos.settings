@@ -269,7 +269,7 @@
             function toStartScanAP()
             {
                 if(myHiBus != null)
-                    myHiBus.callProcedure(endpointName, "wifiStartScanHotspots", "{\"device\":\"" + yourWiFiDeviceName + "\"}", 1000, 
+                    myHiBus.callProcedure(endpointName, "wifiStartScanHotspots", "{\"device\":\"" + yourWiFiDeviceName + "\"}", 5000, 
                                         wifiStartScanHotspotsCallback);
             }
 
@@ -306,7 +306,7 @@
                     myHiBus.callProcedure(endpointName, "wifiConnect", 
                                         "{\"device\":\"" + yourWiFiDeviceName + "\", \"ssid\":\"" + yourWiFiSSID + 
                                         "\", \"password\":\"" + yourWiFiPassword + "\","
-                                        + "\"autoConnect\":true, \"default\":true}", 1000, connectAPCallback);
+                                        + "\"autoConnect\":true, \"default\":true}", 3000, connectAPCallback);
             }
 
 
@@ -339,7 +339,7 @@
             function toDisconnectAP()
             {
                 if(myHiBus != null)
-                    myHiBus.callProcedure(endpointName, "wifiDisconnect", "{\"device\":\"" + yourWiFiDeviceName + "\"}", 1000, disconnectAPCallback);
+                    myHiBus.callProcedure(endpointName, "wifiDisconnect", "{\"device\":\"" + yourWiFiDeviceName + "\"}", 3000, disconnectAPCallback);
             }
 
 
@@ -372,7 +372,7 @@
             function toCloseDevice()
             {
                 if(myHiBus != null)
-                    myHiBus.callProcedure(endpointName, "closeDevice", "{\"device\":\"" + yourWiFiDeviceName + "\"}", 1000, 
+                    myHiBus.callProcedure(endpointName, "closeDevice", "{\"device\":\"" + yourWiFiDeviceName + "\"}", 10000, 
                                         closeDeviceCallback);
             }
 
