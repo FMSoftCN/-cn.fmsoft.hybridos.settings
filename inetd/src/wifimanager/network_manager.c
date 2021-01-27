@@ -203,6 +203,8 @@ void *wifi_scan_thread(void *args)
     char cmd[16] = {0}, reply[16] = {0};
     struct timeval now;
     struct timespec outtime;
+    char status_reply[1024];
+    int reply_length = 1024;
 
     while(scan_running){
         pthread_mutex_lock(&scan_mutex);
@@ -252,9 +254,17 @@ printf("========================================================================
             //printf("%s\n", scan_results);
 
             if(global_callback_func.info_callback)
-                global_callback_func.info_callback(global_callback_func.device_name, scan_results);
+                global_callback_func.info_callback(global_callback_func.device_name, 0, scan_results);
         }
         pthread_mutex_unlock(&scan_mutex);
+
+        memset(cmd, 0, 16);
+        strncpy(cmd, "STATUS", 15);
+        memset(status_reply, 0, 1024);
+        wifi_command(cmd, status_reply, reply_length);
+        if(global_callback_func.info_callback)
+            global_callback_func.info_callback(global_callback_func.device_name, 1, status_reply);
+
 
         //wait run singal or timeout 15s
         pthread_mutex_lock(&thread_run_mutex);

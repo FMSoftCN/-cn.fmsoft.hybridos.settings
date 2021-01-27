@@ -687,14 +687,13 @@ failed:
     return ret_string;
 }
 
-void report_wifi_scan_info(char * device_name, wifi_hotspot * hotspots, int number)
+void report_wifi_scan_info(char * device_name, int type, void * results, int number)
 {
-    network_device * device_array = NULL; 
-    int index = 0;
     wifi_hotspot * node = NULL;
     wifi_hotspot * tempnode = NULL;
-    wifi_hotspot nodecopy;
-    wifi_hotspot * nodecopynext = NULL;
+
+    network_device * device_array = NULL; 
+    int index = 0;
     WiFi_device * wifi_device = NULL;
 
     if(hibus_context_inetd == NULL)
@@ -717,107 +716,201 @@ void report_wifi_scan_info(char * device_name, wifi_hotspot * hotspots, int numb
     if(wifi_device == NULL)
         return;
 
-    // according to signal strength, order the list
-    if(number > 1)
+    if(type == 0)
     {
-        int i = 1;
-        int j = i + 1;
-        node = hotspots;
+        wifi_hotspot * hotspots = results;
+        wifi_hotspot nodecopy;
+        wifi_hotspot * nodecopynext = NULL;
 
-        for(i = 1; i < number - 1; i++)
+        // according to signal strength, order the list
+        if(number > 1)
         {
-            node = node->next;
-            tempnode = node->next;
-            for(j = i + 1; j < number; j++)
-            {
-                if(node->signal_strength < tempnode->signal_strength)
-                {
-                    nodecopynext = node->next;
-                    node->next = tempnode->next;
-                    tempnode->next = nodecopynext;
+            int i = 1;
+            int j = i + 1;
+            node = hotspots;
 
-                    memcpy(&nodecopy, node, sizeof(wifi_hotspot));
-                    memcpy(node, tempnode, sizeof(wifi_hotspot));
-                    memcpy(tempnode, &nodecopy, sizeof(wifi_hotspot));
+            for(i = 1; i < number - 1; i++)
+            {
+                node = node->next;
+                tempnode = node->next;
+                for(j = i + 1; j < number; j++)
+                {
+                    if(node->signal_strength < tempnode->signal_strength)
+                    {
+                        nodecopynext = node->next;
+                        node->next = tempnode->next;
+                        tempnode->next = nodecopynext;
+
+                        memcpy(&nodecopy, node, sizeof(wifi_hotspot));
+                        memcpy(node, tempnode, sizeof(wifi_hotspot));
+                        memcpy(tempnode, &nodecopy, sizeof(wifi_hotspot));
+                    }
+                    tempnode = tempnode->next;
                 }
-                tempnode = tempnode->next;
             }
         }
-    }
-    
-    // the connected ssid is the first
-    if(strlen(wifi_device->ssid))
-    {
-        node = hotspots;
+
+        // the connected ssid is the first
+        if(strlen(wifi_device->ssid))
+        {
+            node = hotspots;
+            while(node)
+            {
+                if(strcmp((char *)wifi_device->ssid, (char *)node->ssid) == 0)
+                {
+                    if(node != hotspots)
+                    {
+                        nodecopynext = node->next;
+                        node->next = hotspots->next;
+                        hotspots->next = nodecopynext;
+
+                        memcpy(&nodecopy, node, sizeof(wifi_hotspot));
+                        memcpy(node, hotspots, sizeof(wifi_hotspot));
+                        memcpy(hotspots, &nodecopy, sizeof(wifi_hotspot));
+                        break;
+                    }
+                }
+                node = node->next;
+            }
+        }
+
+        // set hotspots list
+        pthread_mutex_lock(&(wifi_device->list_mutex));
+        node = wifi_device->first_hotspot;
         while(node)
         {
-            if(strcmp((char *)wifi_device->ssid, (char *)node->ssid) == 0)
+            tempnode = node->next;
+            free(node);
+            node = tempnode;
+        }
+        wifi_device->first_hotspot = hotspots;
+        pthread_mutex_unlock(&(wifi_device->list_mutex));
+
+        // send the message
+        char message[8192];
+        int i = 0;
+        // send WIFISIGNALSTRENGTHCHANGED message
+        if(hotspots && wifi_device->ssid[0] && strcmp((char *)wifi_device->ssid, (char *)hotspots->ssid) == 0)
+        {
+            wifi_device->signal = hotspots->signal_strength;
+            memset(message, 0, 8192);
+            sprintf(message, "{\"ssid\":\"%s\", \"signalStrength\":%d}", hotspots->ssid, hotspots->signal_strength);
+            hibus_fire_event(hibus_context_inetd, WIFISIGNALSTRENGTHCHANGED, message);
+        }
+
+        // if scan ap, send WIFINEWHOTSPOTS message
+        //if(wifi_device->start_scan)
+        if(0)
+        {
+            memset(message, 0, 8192);
+            sprintf(message, "{\"data\":[");
+
+            node = hotspots;
+            for(i = 0; i < number; i++)
             {
                 if(node != hotspots)
-                {
-                    nodecopynext = node->next;
-                    node->next = hotspots->next;
-                    hotspots->next = nodecopynext;
+                    sprintf(message + strlen(message), ",");
 
-                    memcpy(&nodecopy, node, sizeof(wifi_hotspot));
-                    memcpy(node, hotspots, sizeof(wifi_hotspot));
-                    memcpy(hotspots, &nodecopy, sizeof(wifi_hotspot));
-                    break;
-                }
-            }
-            node = node->next;
-        }
-    }
-
-    // set hotspots list
-    pthread_mutex_lock(&(wifi_device->list_mutex));
-    node = wifi_device->first_hotspot;
-    while(node)
-    {
-        tempnode = node->next;
-        free(node);
-        node = tempnode;
-    }
-    wifi_device->first_hotspot = hotspots;
-    pthread_mutex_unlock(&(wifi_device->list_mutex));
-
-    // send the message
-    char message[8192];
-    int i = 0;
-    // send WIFISIGNALSTRENGTHCHANGED message
-    if(hotspots && wifi_device->ssid[0] && strcmp((char *)wifi_device->ssid, (char *)hotspots->ssid) == 0)
-    {
-        wifi_device->signal = hotspots->signal_strength;
-        memset(message, 0, 8192);
-        sprintf(message, "{\"ssid\":\"%s\", \"signalStrength\":%d}", hotspots->ssid, hotspots->signal_strength);
-        hibus_fire_event(hibus_context_inetd, WIFISIGNALSTRENGTHCHANGED, message);
-    }
-
-    // if scan ap, send WIFINEWHOTSPOTS message
-    if(wifi_device->start_scan)
-    {
-        memset(message, 0, 8192);
-        sprintf(message, "{\"data\":[");
-
-        node = hotspots;
-        for(i = 0; i < number; i++)
-        {
-            if(node != hotspots)
-                sprintf(message + strlen(message), ",");
-
-            sprintf(message + strlen(message), 
-                    "{"
+                sprintf(message + strlen(message), 
+                        "{"
                         "\"bssid\":\"%s\","
                         "\"ssid\":\"%s\","
                         "\"capabilities\":\"%s\","
                         "\"signalStrength\":%d"
-                    "}",
-                    node->bssid, node->ssid, node->capabilities, node->signal_strength);
-            node = node->next;
+                        "}",
+                        node->bssid, node->ssid, node->capabilities, node->signal_strength);
+                node = node->next;
+            }
+            sprintf(message + strlen(message), "]}"); 
+            hibus_fire_event(hibus_context_inetd, WIFINEWHOTSPOTS, message);
+            wifi_device->start_scan = false;
         }
-        sprintf(message + strlen(message), "]}"); 
-        hibus_fire_event(hibus_context_inetd, WIFINEWHOTSPOTS, message);
-        wifi_device->start_scan = false;
+    }
+    else if(type == 1)          // status
+    {
+        char * tempstart = NULL;
+        char * tempend = NULL;
+        char content[64];
+        char * reply = (char *)results;
+        char message[1024];
+
+        memset(content, 0, 64);
+        tempstart = strstr(reply, "wpa_state=");
+        if(tempstart)
+        {
+            tempstart += strlen("wpa_state=");
+            tempend = strstr(tempstart, "\n");
+            if(tempend)
+            {
+                memcpy(content, tempstart, tempend - tempstart);
+                if(strncasecmp(content, "COMPLETED", strlen("COMPLETED")))      // has not connected
+                {
+                    
+                    if(device_array[index].status == DEVICE_STATUS_RUNNING)
+                    {
+                        get_if_info(&device_array[index]);
+                        memset(message, 0, 1024);
+                        sprintf(message, "{\"ssid\":\"%s\", \"signalStrength\":0}", wifi_device->ssid);
+                        hibus_fire_event(hibus_context_inetd, WIFISIGNALSTRENGTHCHANGED, message);
+        
+                        pthread_mutex_lock(&(wifi_device->list_mutex));
+                        node = wifi_device->first_hotspot;
+                        while(node)
+                        {
+                            tempnode = node->next;
+                            free(node);
+                            node = tempnode;
+                        }
+                        wifi_device->first_hotspot = NULL;
+                        wifi_device->signal = 0;
+                        memset(wifi_device->ssid, 0, WIFI_SSID_LENGTH);
+                        pthread_mutex_unlock(&(wifi_device->list_mutex));
+                    }
+                }
+                else        // connected
+                {
+                    if(device_array[index].status != DEVICE_STATUS_RUNNING)
+                    {
+                        get_if_info(&device_array[index]);
+
+                        // bssid
+                        tempstart = strstr(tempend, "bssid=");
+                        if(tempstart)
+                        {
+                            tempstart += strlen("bssid=");
+                            tempend = strstr(tempstart, "\n");
+                        }
+
+                        // frenquency 
+                        if(tempend)
+                        {
+                            tempstart = strstr(tempend, "freq=");
+                            if(tempstart)
+                            {
+                                tempstart += strlen("freq=");
+                                tempend = strstr(tempstart, "\n");
+                            }
+                        }
+
+                        // ssid
+                        memset(content, 0, 64);
+                        if(tempend)
+                        {
+                            tempstart = strstr(tempend, "ssid=");
+                            if(tempstart)
+                            {
+                                tempstart += strlen("ssid=");
+                                tempend = strstr(tempstart, "\n");
+                                if(tempend)
+                                    memcpy(content, tempstart, tempend - tempstart);
+                            }
+                            memset(wifi_device->ssid, 0, WIFI_SSID_LENGTH);
+                            sprintf(wifi_device->ssid, "%s", content);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

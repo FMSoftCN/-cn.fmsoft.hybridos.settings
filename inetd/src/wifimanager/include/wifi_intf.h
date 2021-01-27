@@ -67,7 +67,7 @@ typedef struct{
 }aw_wifi_interface_t;
 
 #define NETWORK_DEVICE_NAME_LENGTH  32
-typedef void (* get_wifi_info)(char * device_name, char * information);
+typedef void (* get_wifi_info)(char * device_name, int type, char * information);
 typedef struct _wifi_callback
 {
     char device_name[NETWORK_DEVICE_NAME_LENGTH];

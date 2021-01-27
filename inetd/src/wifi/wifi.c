@@ -206,81 +206,86 @@ static char * get_default_ifname(void)
     return ifname;
 }
 
-static void get_wifimanager_info(char * device, char * results)
+static void get_wifimanager_info(char * device_name, int type, char * results)
 {
     int number = 0;
     if(results && strlen(results) != 0)
     {
-        char content[64];
-        char * tempstart = NULL;
-        char * tempend = NULL;
-        wifi_hotspot * firstnode = NULL;
-
-        wifi_hotspot * node = malloc(sizeof(wifi_hotspot)); 
-        memset(node, 0, sizeof(wifi_hotspot));
-        firstnode = node;
-
-        tempstart = results;
-        tempend = strstr(tempstart, "\n");
-
-        // if has some hot spots
-        while(tempend)
+        if(type == 0)           // scan result
         {
-            tempstart = tempend + 1;
+            char content[64];
+            char * tempstart = NULL;
+            char * tempend = NULL;
+            wifi_hotspot * firstnode = NULL;
 
-            tempend = strstr(tempstart, "\t");
-            if(tempend)
-                memcpy(node->bssid, tempstart, tempend - tempstart);
-            else
-                break;
-
-            tempstart = tempend + 1;
-            tempend = strstr(tempstart, "\t");
-            if(tempend)
-                memcpy(node->frenquency, tempstart, tempend - tempstart);
-
-            tempstart = tempend + 1;
-            memset(content, 0, 64);
-            tempend = strstr(tempstart, "\t");
-            if(tempend)
-            {
-                memcpy(content, tempstart, tempend - tempstart);
-                node->signal_strength = 100 + atoi(content);
-            }
-
-            tempstart = tempend + 1;
-            tempend = strstr(tempstart, "\t");
-            if(tempend)
-                memcpy(node->capabilities, tempstart, tempend - tempstart);
-
-            tempstart = tempend + 1;
-            tempend = strstr(tempstart, "\n");
-            if(tempend)
-            {
-                change_string(tempstart, tempend - tempstart, (unsigned char *)content, 64);
-                memcpy(node->ssid, content, strlen(content));
-            }
-            else
-            {
-                change_string(tempstart, strlen(tempstart), (unsigned char *)content, 64);
-                memcpy(node->ssid, content, strlen(content));
-                number ++;
-                break;
-            }
-
-            number ++;
-            node->next = malloc(sizeof(wifi_hotspot));
-            node = node->next;
+            wifi_hotspot * node = malloc(sizeof(wifi_hotspot)); 
             memset(node, 0, sizeof(wifi_hotspot));
-        }
+            firstnode = node;
 
-        if(number == 0)
-        {
-            free(firstnode);
-            firstnode = NULL;
-        }
+            tempstart = results;
+            tempend = strstr(tempstart, "\n");
 
-        wifiOps.report_wifi_scan_info(device, firstnode, number);
+            // if has some hot spots
+            while(tempend)
+            {
+                tempstart = tempend + 1;
+
+                tempend = strstr(tempstart, "\t");
+                if(tempend)
+                    memcpy(node->bssid, tempstart, tempend - tempstart);
+                else
+                    break;
+
+                tempstart = tempend + 1;
+                tempend = strstr(tempstart, "\t");
+                if(tempend)
+                    memcpy(node->frenquency, tempstart, tempend - tempstart);
+
+                tempstart = tempend + 1;
+                memset(content, 0, 64);
+                tempend = strstr(tempstart, "\t");
+                if(tempend)
+                {
+                    memcpy(content, tempstart, tempend - tempstart);
+                    node->signal_strength = 100 + atoi(content);
+                }
+
+                tempstart = tempend + 1;
+                tempend = strstr(tempstart, "\t");
+                if(tempend)
+                    memcpy(node->capabilities, tempstart, tempend - tempstart);
+
+                tempstart = tempend + 1;
+                tempend = strstr(tempstart, "\n");
+                if(tempend)
+                {
+                    change_string(tempstart, tempend - tempstart, (unsigned char *)content, 64);
+                    memcpy(node->ssid, content, strlen(content));
+                }
+                else
+                {
+                    change_string(tempstart, strlen(tempstart), (unsigned char *)content, 64);
+                    memcpy(node->ssid, content, strlen(content));
+                    number ++;
+                    break;
+                }
+
+                number ++;
+                node->next = malloc(sizeof(wifi_hotspot));
+                node = node->next;
+                memset(node, 0, sizeof(wifi_hotspot));
+            }
+
+            if(number == 0)
+            {
+                free(firstnode);
+                firstnode = NULL;
+            }
+
+            wifiOps.report_wifi_scan_info(device_name, type, (void *)firstnode, number);
+        }
+        else if(type == 1)
+            wifiOps.report_wifi_scan_info(device_name, type, (void *)results, 1024);
     }
 }
 

@@ -29,7 +29,7 @@
 #include "ethernet.h"
 #include "common.h"
 
-extern void report_wifi_scan_info(char * device_name, wifi_hotspot * hotspots, int number);
+extern void report_wifi_scan_info(char * device_name, int type, void * hotspots, int number);
 
 // get device index from device array
 int get_device_index(const network_device * device, const char * ifname)

@@ -28,14 +28,14 @@
 
 const char *op_errors[] = {
     "success",                                  // ERR_NO
-    "an error ocures in library operation",     // ERR_LIBRARY_OPERATION
+    "an error ocures in library operation.",    // ERR_LIBRARY_OPERATION
     "can not get devices list.",                // ERR_NONE_DEVICE_LIST
     "wrong procedure name.",                    // ERR_WRONG_PROCEDURE
     "wrong Json format.",                       // ERR_WRONG_JSON
     "can not find device name in param.",       // ERR_NO_DEVICE_NAME_IN_PARAM
     "can not find device in system.",           // ERR_NO_DEVICE_IN_SYSTEM
-    "invalid network device type",              // ERR_DEVICE_TYPE
-    "some error in load library",               // ERR_LOAD_LIBRARY
+    "invalid network device type.",             // ERR_DEVICE_TYPE
+    "some error in load library.",              // ERR_LOAD_LIBRARY
     "device is not WiFi device.",               // ERR_NOT_WIFI_DEVICE 
     "device has not openned.",                  // ERR_DEVICE_NOT_OPENNED 
     "an error ocurs in open wifi device.",      // ERR_OPEN_WIFI_DEVICE
