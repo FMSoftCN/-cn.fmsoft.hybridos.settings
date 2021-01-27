@@ -119,10 +119,6 @@ char * wifiStartScanHotspots(hibus_conn* conn, const char* from_endpoint, const 
     if(ret_code)
         wifi_device->start_scan = false;
 
-failed:
-    if(jo)
-        json_object_put (jo);
-
     pthread_mutex_lock(&(wifi_device->list_mutex));
     wifi_hotspot * node = wifi_device->first_hotspot;
     while(node)
@@ -142,6 +138,11 @@ failed:
         node = node->next;
     }
     pthread_mutex_unlock(&(wifi_device->list_mutex));
+
+failed:
+    if(jo)
+        json_object_put (jo);
+
     sprintf(ret_string + strlen(ret_string), "],\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
     return ret_string;
 
