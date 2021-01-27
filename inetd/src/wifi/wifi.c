@@ -75,8 +75,6 @@ static int change_string(char * src, int src_length, unsigned char * dest, int d
 
 static void wifi_event_handle(tWIFI_EVENT wifi_event, void *buf, int event_label)
 {
-    printf("============================== event_label 0x%x\n", event_label);
-
     switch(wifi_event)
     {
         case WIFIMG_WIFI_ON_SUCCESS:
@@ -158,7 +156,7 @@ static void wifi_event_handle(tWIFI_EVENT wifi_event, void *buf, int event_label
 
         case WIFIMG_OPT_NO_USE_EVENT:
         {
-            printf("---------- operation no use!\n");
+            printf("operation no use!\n");
             event = WIFIMG_OPT_NO_USE_EVENT;
             break;
         }
@@ -282,7 +280,7 @@ static void get_wifimanager_info(char * device, char * results)
             firstnode = NULL;
         }
 
-        wifiOps.report_wifi_scan_info(wifiOps.device, firstnode, number);
+        wifiOps.report_wifi_scan_info(device, firstnode, number);
     }
 }
 
@@ -360,13 +358,6 @@ static int connect(wifi_context * context, const char * ssid, const char *passwo
     context->event_label++;
     ret_code = context->p_wifi_interface->connect_ap(ssid, password, context->event_label);
 
-/*
-    while(context->p_wifi_interface->wifi_get_wifi_state() == WIFIMG_WIFI_BUSING)
-    {
-        printf("wifi state busing,waiting\n");
-        usleep(2000000);
-    }
-*/
     return ret_code;
 }
 

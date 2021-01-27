@@ -176,8 +176,7 @@ typedef struct _hiWiFiDeviceOps
     unsigned int (* get_hotspots) (wifi_context * context, wifi_hotspot ** hotspots);       
     int (*get_cur_net_info)(wifi_context * context, char * reply, int reply_length);
     int (*set_scan_interval)(wifi_context * context, int interval);
-    void (* report_wifi_scan_info)(network_device * device, wifi_hotspot * hotspots, int number);
-    network_device * device;
+    void (* report_wifi_scan_info)(char * device_name, wifi_hotspot * hotspots, int number);
 } hiWiFiDeviceOps;
 
 // for test

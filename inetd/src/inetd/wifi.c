@@ -687,15 +687,34 @@ failed:
     return ret_string;
 }
 
-void report_wifi_scan_info(network_device * device, wifi_hotspot * hotspots, int number)
+void report_wifi_scan_info(char * device_name, wifi_hotspot * hotspots, int number)
 {
+    network_device * device_array = NULL; 
+    int index = 0;
     wifi_hotspot * node = NULL;
     wifi_hotspot * tempnode = NULL;
     wifi_hotspot nodecopy;
     wifi_hotspot * nodecopynext = NULL;
     WiFi_device * wifi_device = NULL;
 
-    if(device == NULL)
+    if(hibus_context_inetd == NULL)
+        return;
+    device_array = hibus_conn_get_user_data(hibus_context_inetd);
+    if(device_array == NULL)
+        return;
+
+    index = get_device_index(device_array, device_name);
+    if(index == -1)
+        return;
+
+    if(device_array[index].type != DEVICE_TYPE_WIFI)
+        return;
+
+    if(device_array[index].lib_handle == NULL)
+        return;
+
+    wifi_device = (WiFi_device *)(device_array[index].device);
+    if(wifi_device == NULL)
         return;
 
     // according to signal strength, order the list
@@ -726,7 +745,6 @@ void report_wifi_scan_info(network_device * device, wifi_hotspot * hotspots, int
         }
     }
     
-    wifi_device = (WiFi_device *)(device->device);
     // the connected ssid is the first
     if(strlen(wifi_device->ssid))
     {
@@ -801,7 +819,6 @@ void report_wifi_scan_info(network_device * device, wifi_hotspot * hotspots, int
         hibus_fire_event(hibus_context_inetd, WIFINEWHOTSPOTS, message);
         wifi_device->start_scan = false;
     }
-
 }
 
 void wifi_register(hibus_conn * hibus_context_inetd)

@@ -39,7 +39,6 @@ static int init_from_etc_file(network_device * device, int device_num)
     int i = 0;
     int result = 0;
     int device_index = 0;
-//    int library_load_num = 0;
 
     char config_path[MAX_PATH];             // configure file full path
     char config_item[64];
@@ -86,48 +85,40 @@ static int init_from_etc_file(network_device * device, int device_num)
                 sprintf(config_path, "%s", INETD_CONFIG_FILE);
                 if(GetValueFromEtcFile(config_path, config_item, "engine", config_content, ETC_MAXLINE) == ETC_OK)
                 {
-                    // load library
                     sprintf(device[device_index].libpath, "%s", config_content);
-//                    if(load_device_library(device, device_index, config_content) == 0)
-//                    {
-//                        library_load_num++;
-                        if(result == DEVICE_TYPE_WIFI)
-                        {
-                            WiFi_device * wifi_device = malloc(sizeof(WiFi_device));
-                            memset(wifi_device, 0, sizeof(WiFi_device));
-                            device[device_index].device = (void *)wifi_device;
-//                            WiFi_device * wifi_device = (WiFi_device *)device[device_index].device;
+                    if(result == DEVICE_TYPE_WIFI)
+                    {
+                        WiFi_device * wifi_device = malloc(sizeof(WiFi_device));
+                        memset(wifi_device, 0, sizeof(WiFi_device));
+                        device[device_index].device = (void *)wifi_device;
 
-                            sprintf(config_path, "%s", INETD_CONFIG_FILE);
-                            GetIntValueFromEtcFile(config_path, config_item, "priority", &(device[device_index].priority));
+                        sprintf(config_path, "%s", INETD_CONFIG_FILE);
+                        GetIntValueFromEtcFile(config_path, config_item, "priority", &(device[device_index].priority));
 
-                            sprintf(config_path, "%s", INETD_CONFIG_FILE);
-                            GetIntValueFromEtcFile(config_path, config_item, "scan_time", &(wifi_device->scan_time));
-                            if(wifi_device->scan_time == 0)
-                                wifi_device->scan_time = DEFAULT_SCAN_TIME;
+                        sprintf(config_path, "%s", INETD_CONFIG_FILE);
+                        GetIntValueFromEtcFile(config_path, config_item, "scan_time", &(wifi_device->scan_time));
+                        if(wifi_device->scan_time == 0)
+                            wifi_device->scan_time = DEFAULT_SCAN_TIME;
 #ifdef gengyue
-                            sprintf(config_path, "%s", INETD_CONFIG_FILE);
-                            if(GetValueFromEtcFile(config_path, config_item, "start", config_content, ETC_MAXLINE) == ETC_OK)
-                            {
-                                if(strncasecmp(config_content, "enabled", 7) == 0)
-                                    device[device_index].status = DEVICE_STATUS_UP;
-                                else
-                                    device[device_index].status = DEVICE_STATUS_DOWN;
-                            }
+                        sprintf(config_path, "%s", INETD_CONFIG_FILE);
+                        if(GetValueFromEtcFile(config_path, config_item, "start", config_content, ETC_MAXLINE) == ETC_OK)
+                        {
+                            if(strncasecmp(config_content, "enabled", 7) == 0)
+                                device[device_index].status = DEVICE_STATUS_UP;
                             else
                                 device[device_index].status = DEVICE_STATUS_DOWN;
+                        }
+                        else
+                            device[device_index].status = DEVICE_STATUS_DOWN;
 #endif
-                            // TODO: up or down the device
-                        }
-                        else if(result == DEVICE_TYPE_ETHERNET)
-                        {
-                        }
-                        else if(result == DEVICE_TYPE_MOBILE)
-                        {
-                        }
-//                    }
-//                    else
-//                        fprintf(stderr, "WIFI DAEMON: can not load library %s.\n", config_content);
+                        // TODO: up or down the device
+                    }
+                    else if(result == DEVICE_TYPE_ETHERNET)
+                    {
+                    }
+                    else if(result == DEVICE_TYPE_MOBILE)
+                    {
+                    }
                 }
                 else
                     fprintf(stderr, "WIFI DAEMON: can not get library name for %s.\n", config_item);
@@ -142,7 +133,6 @@ static int init_from_etc_file(network_device * device, int device_num)
         sprintf(config_item, "device%d_name", i);
     }
     
-//    return library_load_num;
     return 0;
 }
 
@@ -192,11 +182,6 @@ int main(void)
 
     // step 2: get library setting from configure file
     init_from_etc_file(device, device_num);
-//    if(init_from_etc_file(device, device_num) == 0)
-//    {
-//        fprintf(stderr, "WIFI DAEMON: can not load any library, exit.\n");
-//        exit(1);
-//    }
 
     // step 3: connect to hibus server
     for(i = 0; i < device_num; i++)
