@@ -98,6 +98,7 @@
                 if (packetJson.packetType == "auth" && packetJson.protocolName == "HIBUS") {
                     var version = packetJson.protocolVersion;
                     var chCode = packetJson.challengeCode;
+                    var sign = hybridos.signHibusData("cn.fmsoft.hybridos.sysmgr", chCode);
                     var sendJson = {
                         "packetType":"auth",
                         "protocolName":"HIBUS",
@@ -105,9 +106,10 @@
                         "hostName":"localhost",
                         "appName":appName,
                         "runnerName":runnerName,
-                        "signature":"RFVNQg==",
+                        "signature":sign,
                         "encodedIn":"base64"
                     };
+
                     this.send(JSON.stringify(sendJson));
                     WSStatus = hiBus.WSAUTHENRITY;
                 }
