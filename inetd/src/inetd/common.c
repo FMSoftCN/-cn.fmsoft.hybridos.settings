@@ -126,6 +126,7 @@ char * openDevice(hibus_conn* conn, const char* from_endpoint, const char* to_me
         // if the interface is down, up it now
         if((device[index].status == DEVICE_STATUS_DOWN) || (device[index].status == DEVICE_STATUS_UNCERTAIN))
         {
+            system("rfkill unblock wifi");
             ret_code = ERR_OPEN_WIFI_DEVICE;
             if(ifconfig_helper(device_name, 1))
                 goto failed;

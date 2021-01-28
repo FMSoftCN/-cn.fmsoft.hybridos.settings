@@ -45,7 +45,7 @@
 // event for All Network Devices
 #define NETWORKDEVICECHANGED            "NETWORKDEVICECHANGED"
 // event for WiFi Device
-#define WIFINEWHOTSPOTS                 "WIFINEWHOTSPOTS"
+#define WIFIHOTSPOTSCHANGED             "WIFIHOTSPOTSCHANGED"
 #define WIFISIGNALSTRENGTHCHANGED       "WIFISIGNALSTRENGTHCHANGED"
 // event for Ethernet Device
 // event for Mobile Device
@@ -104,7 +104,6 @@
 #define HOTSPOT_STRING_LENGTH           64 
 #define NETWORK_DEVICE_NAME_LENGTH      32
 #define NETWORK_ADDRESS_LENGTH          32
-#define WIFI_SSID_LENGTH                32
 
 /*
     Architecture of structures
@@ -137,12 +136,11 @@ typedef struct _WiFi_device                     // WiFi device description
 {
     struct _hiWiFiDeviceOps * wifi_device_Ops;  // the operations for control layer
     struct _wifi_context * context;             // the context for WiFi control layer 
-    char ssid[WIFI_SSID_LENGTH];                // the ssid of current connecting network
+    char bssid[HOTSPOT_STRING_LENGTH];          // bssid of current connecting network
     int signal;                                 // signal strength for current connecting network
     int scan_time;                              // the internal time for scan network
     pthread_mutex_t list_mutex;                 // for hotspots list
     struct _wifi_hotspot *first_hotspot;        // hotspots list
-    bool start_scan;                            // whether scaning hotspots
 } WiFi_device;
 
 // WiFi AP description

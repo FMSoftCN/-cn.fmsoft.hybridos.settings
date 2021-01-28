@@ -114,10 +114,7 @@ char * wifiStartScanHotspots(hibus_conn* conn, const char* from_endpoint, const 
             goto failed;
     }
 
-    wifi_device->start_scan = true;
     ret_code = wifi_device->wifi_device_Ops->start_scan(wifi_device->context);
-    if(ret_code)
-        wifi_device->start_scan = false;
 
     pthread_mutex_lock(&(wifi_device->list_mutex));
     wifi_hotspot * node = wifi_device->first_hotspot;
@@ -131,9 +128,10 @@ char * wifiStartScanHotspots(hibus_conn* conn, const char* from_endpoint, const 
                 "\"ssid\":\"%s\","
                 "\"frequency\":\"%s\","
                 "\"capabilities\":\"%s\","
-                "\"signalStrength\":%d"
+                "\"signalStrength\":%d,"
+                "\"isConnected\":%s"
                 "}",
-                node->bssid, node->ssid, node->frenquency, node->capabilities, node->signal_strength);
+                node->bssid, node->ssid, node->frenquency, node->capabilities, node->signal_strength, node->isConnect ? "true": "false");
 
         node = node->next;
     }
@@ -355,8 +353,57 @@ char * wifiConnect(hibus_conn* conn, const char* from_endpoint, const char* to_m
 
     if(ret_code == 0)
     {
-        memset(wifi_device->ssid, 0, WIFI_SSID_LENGTH);
-        sprintf(wifi_device->ssid, "%s", ssid);
+        char reply[512];
+        int reply_length = 512;
+        int i = 0;
+
+        memset(wifi_device->bssid, 0, HOTSPOT_STRING_LENGTH);
+
+        ret_code = ERR_LIBRARY_OPERATION;
+        while(ret_code)
+        {
+            usleep(100000);
+
+            i ++;
+            if(i > 200)
+                goto failed;
+
+            memset(reply, 0, 512);
+            ret_code = wifi_device->wifi_device_Ops->get_cur_net_info(wifi_device->context, reply, reply_length);
+        }
+
+        if(ret_code == 0)
+        {
+            char * tempstart = NULL;
+            char * tempend = NULL;
+            char content[64];
+
+            memset(content, 0, 64);
+            tempstart = strstr(reply, "wpa_state=");
+            if(tempstart)
+            {
+                tempstart += strlen("wpa_state=");
+                tempend = strstr(tempstart, "\n");
+                if(tempend)
+                {
+                    memcpy(content, tempstart, tempend - tempstart);
+                    if(strncasecmp(content, "COMPLETED", strlen("COMPLETED")) == 0)
+                    {
+                        device[index].status = DEVICE_STATUS_RUNNING;
+                        
+                        // bssid
+                        tempstart = strstr(reply, "bssid=");
+                        if(tempstart)
+                        {
+                            tempstart += strlen("bssid=");
+                            tempend = strstr(tempstart, "\n");
+                            if(tempend)
+                                memcpy(wifi_device->bssid, tempstart, tempend - tempstart);
+                        }
+                    }
+                }
+            }
+        }
     }
 failed:
     if(jo)
@@ -443,9 +490,8 @@ char * wifiDisconnect(hibus_conn* conn, const char* from_endpoint, const char* t
 
     wifi_device->wifi_device_Ops->disconnect(wifi_device->context);
 
-    memset(wifi_device->ssid, 0, WIFI_SSID_LENGTH);
+    memset(wifi_device->bssid, 0, HOTSPOT_STRING_LENGTH);
     wifi_device->signal = 0;
-    wifi_device->start_scan = false;
 
     // remove hot spots list
     wifi_hotspot * node = NULL;
@@ -601,6 +647,8 @@ char * wifiGetNetworkInfo(hibus_conn* conn, const char* from_endpoint, const cha
                 memcpy(content, tempstart, tempend - tempstart);
         }
         sprintf(ret_string + strlen(ret_string), "\"bssid\":\"%s\",", content);
+        memset(wifi_device->bssid, 0, HOTSPOT_STRING_LENGTH);
+        sprintf(wifi_device->bssid, "%s", content);
 
         // frenquency 
         memset(content, 0, 64);
@@ -625,8 +673,6 @@ char * wifiGetNetworkInfo(hibus_conn* conn, const char* from_endpoint, const cha
                 memcpy(content, tempstart, tempend - tempstart);
         }
         sprintf(ret_string + strlen(ret_string), "\"ssid\":\"%s\",", content);
-        memset(wifi_device->ssid, 0, WIFI_SSID_LENGTH);
-        sprintf(wifi_device->ssid, "%s", content);
 
 
         // encryptionType
@@ -723,6 +769,9 @@ void report_wifi_scan_info(char * device_name, int type, void * results, int num
         wifi_hotspot nodecopy;
         wifi_hotspot * nodecopynext = NULL;
 
+        if(hotspots == NULL)
+            return;
+
         // according to signal strength, order the list
         if(number > 1)
         {
@@ -752,12 +801,12 @@ void report_wifi_scan_info(char * device_name, int type, void * results, int num
         }
 
         // the connected ssid is the first
-        if(strlen(wifi_device->ssid))
+        if(strlen(wifi_device->bssid))
         {
             node = hotspots;
             while(node)
             {
-                if(strcmp((char *)wifi_device->ssid, (char *)node->ssid) == 0)
+                if(strcmp((char *)wifi_device->bssid, (char *)node->bssid) == 0)
                 {
                     if(node != hotspots)
                     {
@@ -775,6 +824,136 @@ void report_wifi_scan_info(char * device_name, int type, void * results, int num
             }
         }
 
+        // send the message
+        char * signal = malloc(4096);
+        char * remove = malloc(4096);
+        char * new = malloc(8192);
+        char * message = malloc(8192);
+        bool bsignal = false;
+        bool bremove = false;
+        bool bnew = false;
+        int i = 0;
+        wifi_hotspot * host = wifi_device->first_hotspot;
+
+        // send WIFISIGNALSTRENGTHCHANGED message
+        if(hotspots && wifi_device->bssid[0] && strcmp((char *)wifi_device->bssid, (char *)hotspots->bssid) == 0)
+        {
+            wifi_device->signal = hotspots->signal_strength;
+            memset(signal, 0, 4096);
+            sprintf(signal, "{\"ssid\":\"%s\", \"signalStrength\":%d}", hotspots->ssid, hotspots->signal_strength);
+            hibus_fire_event(hibus_context_inetd, WIFISIGNALSTRENGTHCHANGED, signal);
+        }
+
+        // if scan ap, send WIFIHOTSPOTSCHANGED message
+        memset(signal, 0, 4096);
+        sprintf(signal, "\"signal\":[");
+
+        memset(remove, 0, 4096);
+        sprintf(remove, "\"remove\":[");
+
+        memset(new, 0, 8192);
+        sprintf(new, "\"new\":[");
+
+        if(host == NULL)            // all is new ap
+        {
+            node = hotspots;
+            for(i = 0; i < number; i++)
+            {
+                if(node != hotspots)
+                    sprintf(new + strlen(new), ",");
+
+                sprintf(new + strlen(new), 
+                        "{"
+                        "\"bssid\":\"%s\","
+                        "\"ssid\":\"%s\","
+                        "\"capabilities\":\"%s\","
+                        "\"signalStrength\":%d"
+                        "}",
+                        node->bssid, node->ssid, node->capabilities, node->signal_strength);
+                node = node->next;
+            }
+        }
+        else
+        {
+            while(host)
+            {
+                node = hotspots;
+                i = 0;
+                while(node)
+                {
+                    if(strcmp((char *)host->bssid, (char *)node->bssid) == 0)
+                    {
+                        // signal
+                        if(host->signal_strength != node->signal_strength)
+                        {
+                            if(bsignal)
+                                sprintf(signal + strlen(signal), ",");
+                            bsignal = true;
+                            sprintf(signal + strlen(signal), 
+                                "{"
+                                    "\"bssid\":\"%s\","
+                                    "\"signalStrength\":%d"
+                                "}",
+                                node->bssid, node->signal_strength);
+                        }
+
+                        i = 1;
+                        node->isConnect = true;
+                        break;
+                    }
+                    node = node->next;
+                }
+
+                if(i == 0)          // removed
+                {
+                    if(bremove)
+                        sprintf(remove + strlen(remove), ",");
+                    bremove = true;
+                    sprintf(remove + strlen(remove), 
+                            "{"
+                            "\"bssid\":\"%s\""
+                            "}",
+                            host->bssid);
+                }
+                host = host->next;
+            }
+
+            node = hotspots;
+            host = wifi_device->first_hotspot;
+
+            while(node)
+            {
+                if(!(node->isConnect))         // have been checked
+                {
+                    if(bnew)
+                        sprintf(new + strlen(new), ",");
+                    bnew = true;
+                    sprintf(new + strlen(new), 
+                            "{"
+                            "\"bssid\":\"%s\","
+                            "\"ssid\":\"%s\","
+                            "\"capabilities\":\"%s\","
+                            "\"signalStrength\":%d"
+                            "}",
+                            node->bssid, node->ssid, node->capabilities, node->signal_strength);
+                }
+                node->isConnect = false;
+                node = node->next;
+            }
+        }
+
+        memset(message, 0, 8192);
+        sprintf(message, "{%s], %s], %s]}", new, remove, signal);
+        hibus_fire_event(hibus_context_inetd, WIFIHOTSPOTSCHANGED, message);
+
+        free(signal);
+        free(remove);
+        free(new);
+        free(message);
+
+        if(hotspots && wifi_device->bssid[0] && strcmp((char *)wifi_device->bssid, (char *)hotspots->bssid) == 0)
+            hotspots->isConnect = true;;
+
         // set hotspots list
         pthread_mutex_lock(&(wifi_device->list_mutex));
         node = wifi_device->first_hotspot;
@@ -786,132 +965,6 @@ void report_wifi_scan_info(char * device_name, int type, void * results, int num
         }
         wifi_device->first_hotspot = hotspots;
         pthread_mutex_unlock(&(wifi_device->list_mutex));
-
-        // send the message
-        char message[8192];
-        int i = 0;
-        // send WIFISIGNALSTRENGTHCHANGED message
-        if(hotspots && wifi_device->ssid[0] && strcmp((char *)wifi_device->ssid, (char *)hotspots->ssid) == 0)
-        {
-            wifi_device->signal = hotspots->signal_strength;
-            memset(message, 0, 8192);
-            sprintf(message, "{\"ssid\":\"%s\", \"signalStrength\":%d}", hotspots->ssid, hotspots->signal_strength);
-            hibus_fire_event(hibus_context_inetd, WIFISIGNALSTRENGTHCHANGED, message);
-        }
-
-        // if scan ap, send WIFINEWHOTSPOTS message
-        //if(wifi_device->start_scan)
-        if(0)
-        {
-            memset(message, 0, 8192);
-            sprintf(message, "{\"data\":[");
-
-            node = hotspots;
-            for(i = 0; i < number; i++)
-            {
-                if(node != hotspots)
-                    sprintf(message + strlen(message), ",");
-
-                sprintf(message + strlen(message), 
-                        "{"
-                        "\"bssid\":\"%s\","
-                        "\"ssid\":\"%s\","
-                        "\"capabilities\":\"%s\","
-                        "\"signalStrength\":%d"
-                        "}",
-                        node->bssid, node->ssid, node->capabilities, node->signal_strength);
-                node = node->next;
-            }
-            sprintf(message + strlen(message), "]}"); 
-            hibus_fire_event(hibus_context_inetd, WIFINEWHOTSPOTS, message);
-            wifi_device->start_scan = false;
-        }
-    }
-    else if(type == 1)          // status
-    {
-        char * tempstart = NULL;
-        char * tempend = NULL;
-        char content[64];
-        char * reply = (char *)results;
-        char message[1024];
-
-        memset(content, 0, 64);
-        tempstart = strstr(reply, "wpa_state=");
-        if(tempstart)
-        {
-            tempstart += strlen("wpa_state=");
-            tempend = strstr(tempstart, "\n");
-            if(tempend)
-            {
-                memcpy(content, tempstart, tempend - tempstart);
-                if(strncasecmp(content, "COMPLETED", strlen("COMPLETED")))      // has not connected
-                {
-                    
-                    if(device_array[index].status == DEVICE_STATUS_RUNNING)
-                    {
-                        get_if_info(&device_array[index]);
-                        memset(message, 0, 1024);
-                        sprintf(message, "{\"ssid\":\"%s\", \"signalStrength\":0}", wifi_device->ssid);
-                        hibus_fire_event(hibus_context_inetd, WIFISIGNALSTRENGTHCHANGED, message);
-        
-                        pthread_mutex_lock(&(wifi_device->list_mutex));
-                        node = wifi_device->first_hotspot;
-                        while(node)
-                        {
-                            tempnode = node->next;
-                            free(node);
-                            node = tempnode;
-                        }
-                        wifi_device->first_hotspot = NULL;
-                        wifi_device->signal = 0;
-                        memset(wifi_device->ssid, 0, WIFI_SSID_LENGTH);
-                        pthread_mutex_unlock(&(wifi_device->list_mutex));
-                    }
-                }
-                else        // connected
-                {
-                    if(device_array[index].status != DEVICE_STATUS_RUNNING)
-                    {
-                        get_if_info(&device_array[index]);
-
-                        // bssid
-                        tempstart = strstr(tempend, "bssid=");
-                        if(tempstart)
-                        {
-                            tempstart += strlen("bssid=");
-                            tempend = strstr(tempstart, "\n");
-                        }
-
-                        // frenquency 
-                        if(tempend)
-                        {
-                            tempstart = strstr(tempend, "freq=");
-                            if(tempstart)
-                            {
-                                tempstart += strlen("freq=");
-                                tempend = strstr(tempstart, "\n");
-                            }
-                        }
-
-                        // ssid
-                        memset(content, 0, 64);
-                        if(tempend)
-                        {
-                            tempstart = strstr(tempend, "ssid=");
-                            if(tempstart)
-                            {
-                                tempstart += strlen("ssid=");
-                                tempend = strstr(tempstart, "\n");
-                                if(tempend)
-                                    memcpy(content, tempstart, tempend - tempstart);
-                            }
-                            memset(wifi_device->ssid, 0, WIFI_SSID_LENGTH);
-                            sprintf(wifi_device->ssid, "%s", content);
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -954,10 +1007,10 @@ void wifi_register(hibus_conn * hibus_context_inetd)
         return;
     }
 
-    ret_code = hibus_register_event(hibus_context_inetd, WIFINEWHOTSPOTS, NULL, NULL);
+    ret_code = hibus_register_event(hibus_context_inetd, WIFIHOTSPOTSCHANGED, NULL, NULL);
     if(ret_code)
     {
-        fprintf(stderr, "WIFI DAEMON: Error for register event %s, %s.\n", WIFINEWHOTSPOTS, hibus_get_err_message(ret_code));
+        fprintf(stderr, "WIFI DAEMON: Error for register event %s, %s.\n", WIFIHOTSPOTSCHANGED, hibus_get_err_message(ret_code));
         return;
     }
 
@@ -972,7 +1025,7 @@ void wifi_register(hibus_conn * hibus_context_inetd)
 void wifi_revoke(hibus_conn * hibus_context_inetd)
 {
     hibus_revoke_event(hibus_context_inetd, WIFISIGNALSTRENGTHCHANGED);
-    hibus_revoke_event(hibus_context_inetd, WIFINEWHOTSPOTS);
+    hibus_revoke_event(hibus_context_inetd, WIFIHOTSPOTSCHANGED);
 
     hibus_revoke_procedure(hibus_context_inetd, METHOD_WIFI_START_SCAN);
     hibus_revoke_procedure(hibus_context_inetd, METHOD_WIFI_STOP_SCAN);

@@ -1756,14 +1756,15 @@ int aw_wifi_off(const aw_wifi_interface_t *p_wifi_interface)
 {
     const aw_wifi_interface_t *p_aw_wifi_intf = &aw_wifi_interface;
 
-    if(p_aw_wifi_intf != p_wifi_interface){
-	call_event_callback_function(WIFIMG_WIFI_OFF_FAILED, NULL, 0);
+    if(p_aw_wifi_intf != p_wifi_interface)
+    {
+    	call_event_callback_function(WIFIMG_WIFI_OFF_FAILED, NULL, 0);
         return -1;
     }
 
-    if(gwifi_state == WIFIMG_WIFI_DISABLED){
-        return 0;
-    }
+//    if(gwifi_state == WIFIMG_WIFI_DISABLED){
+//        return 0;
+//    }
 
     stop_wifi_scan_thread();
     wifi_close_supplicant_connection();

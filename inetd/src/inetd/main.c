@@ -217,21 +217,6 @@ int main(void)
         ret_code = hibus_wait_and_dispatch_packet(hibus_context_inetd, 1000);
         if(ret_code)
             fprintf(stderr, "WIFI DAEMON: WiFi error for hibus_wait_and_dispatch_packet, %s.\n", hibus_get_err_message(ret_code));
-#ifdef gengyue       
-        for(i = 0; i < device_num; i++)
-        {
-            if(device[i].type == DEVICE_TYPE_WIFI)
-            {
-                WiFi_device * wifi_device = device[i].device;
-                if(wifi_device && wifi_device->context != NULL)
-                {
-                    char reply[4096];
-                    memset(reply, 0, 4096);
-                    ret_code = wifi_device->wifi_device_Ops->get_cur_net_info(wifi_device->context, reply, 4096);
-                }
-            }
-        }
-#endif
     }
 
     // step 6: free the resource
