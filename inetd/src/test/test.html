@@ -69,15 +69,15 @@
         <hr>
 
         <hr>
-        <p> Step 13: Subscribe WIFINEWHOTSPOTS event.</p>
-        <button id="btnValue13" type="button">subscribe WIFINEWHOTSPOTS </button>
+        <p> Step 13: Subscribe WIFIHOTSPOTSCHANGED event.</p>
+        <button id="btnValue13" type="button">subscribe WIFIHOTSPOTSCHANGED </button>
         <p id="subhotspots"></p> 
         <p id="hotspots"></p> 
         <hr>
 
         <hr>
-        <p> Step 14: Unsubscribe WIFINEWHOTSPOTS event.</p>
-        <button id="btnValue14" type="button">unsubscribe WIFINEWHOTSPOTS </button>
+        <p> Step 14: Unsubscribe WIFIHOTSPOTSCHANGED event.</p>
+        <button id="btnValue14" type="button">unsubscribe WIFIHOTSPOTSCHANGED </button>
         <p id="unsubhotspots"></p> 
         <hr>
         
@@ -252,12 +252,12 @@
                     }
                     if(packetJson.errCode == 0)
                     {
-                        var info = "<table border=\"1\"><tr><th>bssid</th><th>ssid</th><th>Frequency</th><th>Capability</th><th>Signal</th></tr>";
+                        var info = "<table border=\"1\"><tr><th>bssid</th><th>ssid</th><th>Frequency</th><th>Capability</th><th>Signal</th><th>connected</th></tr>";
 
                         for(var i = 0; i < packetJson.data.length; i++)
                             info += "<tr> <td>" + packetJson.data[i].bssid + "</td><td>" + packetJson.data[i].ssid + "</td><td>" + 
                                     packetJson.data[i].frequency + "</td><td>" + packetJson.data[i].capabilities + "</td><td>" + 
-                                    packetJson.data[i].signalStrength + "</td></tr>";
+                                    packetJson.data[i].signalStrength + "</td><td>" + packetJson.data[i].isConnected + "</td></tr>";
                         info += "</table>"
                         document.getElementById("APlist").innerHTML = info;
                     }
@@ -428,15 +428,15 @@
             }
 
 
-            // subscribe WIFINEWHOTSPOTS event
+            // subscribe WIFIHOTSPOTSCHANGED event
             function subscribeHotspotsFunctionCallback(result)
             {
                 if(result == 200)
-                    document.getElementById("subhotspots").innerHTML = "SubScribe WIFINEWHOTSPOTS event OK!";
+                    document.getElementById("subhotspots").innerHTML = "SubScribe WIFIHOTSPOTSCHANGED event OK!";
                 else if(result == 404)
-                    document.getElementById("subhotspots").innerHTML = "SubScribe WIFINEWHOTSPOTS error: can not find specified event.";
+                    document.getElementById("subhotspots").innerHTML = "SubScribe WIFIHOTSPOTSCHANGED error: can not find specified event.";
                 else if(result == 403)
-                    document.getElementById("subhotspots").innerHTML = "SubScribe WIFINEWHOTSPOTS error: have not enough permission.";
+                    document.getElementById("subhotspots").innerHTML = "SubScribe WIFIHOTSPOTSCHANGED error: have not enough permission.";
 
             }
             function subscribeHotspotsCallback(result)
@@ -449,11 +449,24 @@
                     return;
                 }
 
-                var info = "<table border=\"1\"><tr><th>bssid</th><th>ssid</th><th>Capability</th><th>Signal</th></tr>";
+                var info = "new hotspots:";
+                info += "<table border=\"1\"><tr><th>bssid</th><th>ssid</th><th>Capability</th><th>Signal</th></tr>";
 
-                for(var i = 0; i < packetJson.data.length; i++)
-                    info += "<tr> <td>" + packetJson.data[i].bssid + "</td><td>" + packetJson.data[i].ssid + "</td><td>" + 
-                        packetJson.data[i].capabilities + "</td><td>" + packetJson.data[i].signalStrength + "</td></tr>";
+                for(var i = 0; i < packetJson.added.length; i++)
+                    info += "<tr> <td>" + packetJson.added[i].bssid + "</td><td>" + packetJson.added[i].ssid + "</td><td>" + 
+                        packetJson.added[i].capabilities + "</td><td>" + packetJson.added[i].signalStrength + "</td></tr>";
+                info += "</table><p>removed hotspots</p>"
+
+                info += "<table border=\"1\"><tr><th>bssid</th></tr>";
+
+                for(var i = 0; i < packetJson.removed.length; i++)
+                    info += "<tr> <td>" + packetJson.removed[i].bssid + "</td></tr>";
+                info += "</table><p>the hotspots for signal changed</p>"
+
+                info += "<table border=\"1\"><tr><th>bssid</th><th>Signal</th></tr>";
+
+                for(var i = 0; i < packetJson.signalStrength.length; i++)
+                    info += "<tr> <td>" + packetJson.signalStrength[i].bssid + "</td><td>" + packetJson.signalStrength[i].signalStrength + "</td></tr>";
                 info += "</table>"
 
                 document.getElementById("hotspots").innerHTML = info;
@@ -462,27 +475,27 @@
             function toSubscribeHotspots()
             {
                 if(myHiBus != null)
-                    myHiBus.subscribeEvent(endpointName, "WIFINEWHOTSPOTS", subscribeHotspotsCallback, subscribeHotspotsFunctionCallback);
+                    myHiBus.subscribeEvent(endpointName, "WIFIHOTSPOTSCHANGED", subscribeHotspotsCallback, subscribeHotspotsFunctionCallback);
             }
 
 
-            // unsubscribe WIFINEWHOTSPOTS event
+            // unsubscribe WIFIHOTSPOTSCHANGED event
             function unsubscribeHotspotsCallback(result)
             {
                 if(result == 200)
                 {
-                    document.getElementById("unsubhotspots").innerHTML = "UnsubScribe WIFINEWHOTSPOTS event OK!";
+                    document.getElementById("unsubhotspots").innerHTML = "UnsubScribe WIFIHOTSPOTSCHANGED event OK!";
                     document.getElementById("subhotspots").innerHTML = "";
                     document.getElementById("hotspots").innerHTML = "";
                 }
                 else if(result == 404)
-                    document.getElementById("unsubhotspots").innerHTML = "UnsubScribe WIFINEWHOTSPOTS error: the event has been removed!";
+                    document.getElementById("unsubhotspots").innerHTML = "UnsubScribe WIFIHOTSPOTSCHANGED error: the event has been removed!";
             }
 
             function toUnsubscribeHotspots()
             {
                 if(myHiBus != null)
-                    myHiBus.unsubscribeEvent(endpointName, "WIFINEWHOTSPOTS", unsubscribeHotspotsCallback);
+                    myHiBus.unsubscribeEvent(endpointName, "WIFIHOTSPOTSCHANGED", unsubscribeHotspotsCallback);
             }
 
             document.getElementById("btnValue1").onclick = toStart;

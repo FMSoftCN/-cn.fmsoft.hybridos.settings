@@ -452,13 +452,13 @@ void wifi_close_sockets()
 
 void wifi_close_supplicant_connection()
 {
-//    int count = 20; /* wait 2 seconds to ensure init has stopped stupplicant */
+    int count = 10; /* wait 2 seconds to ensure init has stopped stupplicant */
 
     wifi_close_sockets();
 
-//    while (count-- > 0) {
-//        usleep(100000);
-//    }
+    while (count-- > 0) {
+        usleep(100000);
+    }
 }
 
 int wifi_command(char const *cmd, char *reply, size_t reply_len)

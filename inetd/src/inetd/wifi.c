@@ -827,7 +827,7 @@ void report_wifi_scan_info(char * device_name, int type, void * results, int num
         // send the message
         char * signal = malloc(4096);
         char * remove = malloc(4096);
-        char * new = malloc(8192);
+        char * added = malloc(8192);
         char * message = malloc(8192);
         bool bsignal = false;
         bool bremove = false;
@@ -846,13 +846,13 @@ void report_wifi_scan_info(char * device_name, int type, void * results, int num
 
         // if scan ap, send WIFIHOTSPOTSCHANGED message
         memset(signal, 0, 4096);
-        sprintf(signal, "\"signal\":[");
+        sprintf(signal, "\"signalStrength\":[");
 
         memset(remove, 0, 4096);
-        sprintf(remove, "\"remove\":[");
+        sprintf(remove, "\"removed\":[");
 
-        memset(new, 0, 8192);
-        sprintf(new, "\"new\":[");
+        memset(added, 0, 8192);
+        sprintf(added, "\"added\":[");
 
         if(host == NULL)            // all is new ap
         {
@@ -860,9 +860,9 @@ void report_wifi_scan_info(char * device_name, int type, void * results, int num
             for(i = 0; i < number; i++)
             {
                 if(node != hotspots)
-                    sprintf(new + strlen(new), ",");
+                    sprintf(added + strlen(added), ",");
 
-                sprintf(new + strlen(new), 
+                sprintf(added + strlen(added), 
                         "{"
                         "\"bssid\":\"%s\","
                         "\"ssid\":\"%s\","
@@ -926,9 +926,9 @@ void report_wifi_scan_info(char * device_name, int type, void * results, int num
                 if(!(node->isConnect))         // have been checked
                 {
                     if(bnew)
-                        sprintf(new + strlen(new), ",");
+                        sprintf(added + strlen(added), ",");
                     bnew = true;
-                    sprintf(new + strlen(new), 
+                    sprintf(added + strlen(added), 
                             "{"
                             "\"bssid\":\"%s\","
                             "\"ssid\":\"%s\","
@@ -943,12 +943,12 @@ void report_wifi_scan_info(char * device_name, int type, void * results, int num
         }
 
         memset(message, 0, 8192);
-        sprintf(message, "{%s], %s], %s]}", new, remove, signal);
+        sprintf(message, "{%s], %s], %s]}", added, remove, signal);
         hibus_fire_event(hibus_context_inetd, WIFIHOTSPOTSCHANGED, message);
 
         free(signal);
         free(remove);
-        free(new);
+        free(added);
         free(message);
 
         if(hotspots && wifi_device->bssid[0] && strcmp((char *)wifi_device->bssid, (char *)hotspots->bssid) == 0)
