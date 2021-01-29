@@ -6,23 +6,21 @@
                                               |
                       --------------------------------------------------------
                       |                       |                              |
-    hiBus layer:   mobile.c                 wifi.c                      ethernet.c
+    hiBus layer:   mobile.c             wifi.c(src/inted)                ethernet.c
                                               |
-    control layer:                         wifi.so(src/wifi)
+    control layer:                      wifi.so(src/wifi)
                                               |
     tools layer(optional):              wifimanager.so
                                               |
-                                        wpa_client.so
+    system service layer                wpa_supplicant
+                                              |
+    hardware layer                       WiFi Device
 
     runner layer: manage each network device and initialize hiBus context.
     hiBus layer: handle the data from hibus, such as procedure and message.
     control layer: control the hardware device.
     tools layer: assistant tools for control if any.
 
-    Architecture of structures
-                    |-- type      |-- Ethnet_device (for Ethernet)
-    network_device--|-- device <--|-- WiFi_device (for WiFi)
-                    |-- ifname    |-- Mobile_device (for Mobile)
 */
 
 

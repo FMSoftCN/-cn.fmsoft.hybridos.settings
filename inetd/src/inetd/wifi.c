@@ -832,6 +832,9 @@ void report_wifi_scan_info(char * device_name, int type, void * results, int num
         bool bsignal = false;
         bool bremove = false;
         bool bnew = false;
+        bool changedssid = false;
+        bool changedsignal = false;
+        bool changedcapabilities = false;
         int i = 0;
         wifi_hotspot * host = wifi_device->first_hotspot;
 
@@ -840,19 +843,19 @@ void report_wifi_scan_info(char * device_name, int type, void * results, int num
         {
             wifi_device->signal = hotspots->signal_strength;
             memset(signal, 0, 4096);
-            sprintf(signal, "{\"ssid\":\"%s\", \"signalStrength\":%d}", hotspots->ssid, hotspots->signal_strength);
+            sprintf(signal, "{\"bssid\":\"%s\", \"ssid\":\"%s\", \"signalStrength\":%d}", hotspots->bssid, hotspots->ssid, hotspots->signal_strength);
             hibus_fire_event(hibus_context_inetd, WIFISIGNALSTRENGTHCHANGED, signal);
         }
 
         // if scan ap, send WIFIHOTSPOTSCHANGED message
         memset(signal, 0, 4096);
-        sprintf(signal, "\"signalStrength\":[");
+        sprintf(signal, "\"changed\":[");
 
         memset(remove, 0, 4096);
-        sprintf(remove, "\"removed\":[");
+        sprintf(remove, "\"missed\":[");
 
         memset(added, 0, 8192);
-        sprintf(added, "\"added\":[");
+        sprintf(added, "\"found\":[");
 
         if(host == NULL)            // all is new ap
         {
@@ -883,28 +886,57 @@ void report_wifi_scan_info(char * device_name, int type, void * results, int num
                 {
                     if(strcmp((char *)host->bssid, (char *)node->bssid) == 0)
                     {
+                        changedssid = false;
+                        changedsignal = false;
+                        changedcapabilities = false;
+
                         // signal
                         if(host->signal_strength != node->signal_strength)
+                            changedsignal = true;
+                        if(strcmp((char *)host->ssid, (char *)node->ssid))
+                            changedssid = true;
+                        if(strcmp((char *)host->capabilities, (char *)node->capabilities))
+                            changedcapabilities = true;
+
+                        if(changedssid || changedsignal || changedcapabilities)
                         {
                             if(bsignal)
                                 sprintf(signal + strlen(signal), ",");
                             bsignal = true;
+
                             sprintf(signal + strlen(signal), 
-                                "{"
-                                    "\"bssid\":\"%s\","
-                                    "\"signalStrength\":%d"
-                                "}",
-                                node->bssid, node->signal_strength);
+                                    "{"
+                                        "\"bssid\":\"%s\"",
+                                    node->bssid);
+
+                            if(changedsignal)
+                                    sprintf(signal + strlen(signal), 
+                                        ","
+                                        "\"signalStrength\":%d",
+                                        node->signal_strength);
+
+                            if(changedssid)
+                                    sprintf(signal + strlen(signal), 
+                                        ","
+                                        "\"ssid\":\"%s\"",
+                                        node->ssid);
+
+                            if(changedcapabilities)
+                                    sprintf(signal + strlen(signal), 
+                                        ","
+                                        "\"capabilities\":\"%s\"",
+                                        node->capabilities);
+                            sprintf(signal + strlen(signal), "}");
                         }
 
-                        i = 1;
-                        node->isConnect = true;
+                        i = 1;                      // old ap is found in new ap list
+                        node->isConnect = true;     // flag to indicate: it is not new hotspot 
                         break;
                     }
                     node = node->next;
                 }
 
-                if(i == 0)          // removed
+                if(i == 0)          // do not find in orignal list, it is removed
                 {
                     if(bremove)
                         sprintf(remove + strlen(remove), ",");

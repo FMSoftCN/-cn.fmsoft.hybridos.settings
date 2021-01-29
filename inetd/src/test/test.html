@@ -398,7 +398,7 @@
                     console.log(e.message);
                     return;
                 }
-                document.getElementById("signalstrength").innerHTML = packetJson.ssid + " signal strength is " + packetJson.signalStrength;
+                document.getElementById("signalstrength").innerHTML = "bssid: " + packetJson.bssid + "   ssid: " + packetJson.ssid + " signal strength is " + packetJson.signalStrength;
             }
 
             function toSubscribeSignal()
@@ -449,24 +449,25 @@
                     return;
                 }
 
-                var info = "new hotspots:";
+                var info = "find hotspots:";
                 info += "<table border=\"1\"><tr><th>bssid</th><th>ssid</th><th>Capability</th><th>Signal</th></tr>";
 
-                for(var i = 0; i < packetJson.added.length; i++)
-                    info += "<tr> <td>" + packetJson.added[i].bssid + "</td><td>" + packetJson.added[i].ssid + "</td><td>" + 
-                        packetJson.added[i].capabilities + "</td><td>" + packetJson.added[i].signalStrength + "</td></tr>";
-                info += "</table><p>removed hotspots</p>"
+                for(var i = 0; i < packetJson.found.length; i++)
+                    info += "<tr> <td>" + packetJson.found[i].bssid + "</td><td>" + packetJson.found[i].ssid + "</td><td>" + 
+                        packetJson.found[i].capabilities + "</td><td>" + packetJson.found[i].signalStrength + "</td></tr>";
+                info += "</table><p>miss hotspots</p>"
 
                 info += "<table border=\"1\"><tr><th>bssid</th></tr>";
 
-                for(var i = 0; i < packetJson.removed.length; i++)
-                    info += "<tr> <td>" + packetJson.removed[i].bssid + "</td></tr>";
-                info += "</table><p>the hotspots for signal changed</p>"
+                for(var i = 0; i < packetJson.missed.length; i++)
+                    info += "<tr> <td>" + packetJson.missed[i].bssid + "</td></tr>";
+                info += "</table><p>the hotspots for changed</p>"
 
-                info += "<table border=\"1\"><tr><th>bssid</th><th>Signal</th></tr>";
+                info += "<table border=\"1\"><tr><th>bssid</th><th>ssid</th><th>Capability</th><th>Signal</th></tr>";
 
-                for(var i = 0; i < packetJson.signalStrength.length; i++)
-                    info += "<tr> <td>" + packetJson.signalStrength[i].bssid + "</td><td>" + packetJson.signalStrength[i].signalStrength + "</td></tr>";
+                for(var i = 0; i < packetJson.changed.length; i++)
+                    info += "<tr> <td>" + packetJson.changed[i].bssid + "</td><td>" + packetJson.changed[i].ssid + "</td><td>" +
+                           packetJson.changed[i].capabilities + "</td><td>" + packetJson.changed[i].signalStrength + "</td></tr>";
                 info += "</table>"
 
                 document.getElementById("hotspots").innerHTML = info;

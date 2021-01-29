@@ -365,17 +365,6 @@ int wpa_ctrl_get_fd(struct wpa_ctrl *ctrl);
 
 char * wpa_ctrl_get_remote_ifname(struct wpa_ctrl *ctrl);
 
-#ifdef ANDROID
-/**
- * wpa_ctrl_cleanup() - Delete any local UNIX domain socket files that
- * may be left over from clients that were previously connected to
- * wpa_supplicant. This keeps these files from being orphaned in the
- * event of crashes that prevented them from being removed as part
- * of the normal orderly shutdown.
- */
-void wpa_ctrl_cleanup(void);
-#endif /* ANDROID */
-
 #ifdef CONFIG_CTRL_IFACE_UDP
 /* Port range for multiple wpa_supplicant instances and multiple VIFs */
 #define WPA_CTRL_IFACE_PORT 9877
