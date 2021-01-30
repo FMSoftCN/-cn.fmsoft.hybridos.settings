@@ -403,6 +403,20 @@ char * wifiConnect(hibus_conn* conn, const char* from_endpoint, const char* to_m
                     }
                 }
             }
+
+            wifi_hotspot * node = wifi_device->first_hotspot;
+
+            pthread_mutex_lock(&(wifi_device->list_mutex));
+            while(node)
+            {
+                if(strcmp((char *)wifi_device->bssid, (char *)node->bssid) == 0)
+                {
+                    wifi_device->signal = node->signal_strength;
+                    break;
+                }
+                node = node->next;
+            }
+            pthread_mutex_unlock(&(wifi_device->list_mutex));
         }
     }
 failed:

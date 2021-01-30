@@ -375,6 +375,7 @@ int wifi_wait_on_socket(char *buf, size_t buflen)
         return snprintf(buf, buflen, WPA_EVENT_TERMINATING " - recv error");
     }
     buf[nread] = '\0';
+printf("=================================================== read from wpa: %s\n", buf);
     /* Check for EOF on the socket */
     if (result == 0 && nread == 0) {
         /* Fabricate an event to pass up */
