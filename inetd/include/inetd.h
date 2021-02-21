@@ -88,6 +88,17 @@
 #define ERR_OPEN_MOBILE_DEVICE          -15
 #define ERR_CLOSE_MOBILE_DEVICE         -16
 #define ERR_DEVICE_NOT_CONNECT          -17
+#define ERR_LIB_DEVICE_DISABLE          -18
+#define ERR_LIB_INVALID_SSID            -19
+#define ERR_LIB_INVALID_PASSWORD        -20
+#define ERR_LIB_DEVICE_BUSY             -21
+#define ERR_LIB_NET_EXISTENCE           -22
+#define ERR_LIB_ADD_NETWORK             -23
+#define ERR_LIB_SET_NETWORK             -24
+#define ERR_LIB_SELECT_NETWORK          -25
+#define ERR_LIB_ENABLE_NETWORK          -26
+#define ERR_LIB_RECONNECT_NETWORK       -27
+#define ERR_LIB_WRONG_PASSWORD          -28
 
 // for network changed
 #define NETWORK_CHANGED_NAME            ((0x01) << 0)
@@ -149,7 +160,7 @@ typedef struct _wifi_hotspot                    // the information for one AP
     char frenquency[HOTSPOT_STRING_LENGTH];     // frequency
     char capabilities[HOTSPOT_STRING_LENGTH];   // encrypt type
     int  signal_strength;                       // signal strength
-    bool isConnect;                             // whether connected
+    int isConnect;                              // whether connected
     struct _wifi_hotspot * next;                // the next node in list
 } wifi_hotspot;
 

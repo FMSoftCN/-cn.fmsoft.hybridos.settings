@@ -44,7 +44,18 @@ const char *op_errors[] = {
     "an error ocurs in close ethernet device.", // ERR_CLOSE_ETHERNET_DEVICE
     "an error ocurs in open mobile device.",    // ERR_OPEN_MOBILE_DEVICE
     "an error ocurs in close mobile device.",   // ERR_CLOSE_MOBILE_DEVICE
-    "device does not connect any network."      // ERR_DEVICE_NOT_CONNECT
+    "device does not connect any network.",     // ERR_DEVICE_NOT_CONNECT
+    "device is disalbe in library.",            // ERR_LIB_DEVICE_DISABLE
+    "invalid ssid in library.",                 // ERR_LIB_INVALID_SSID
+    "invalid password in library.",             // ERR_LIB_INVALID_PASSWORD
+    "device is busy in library.",               // ERR_LIB_DEVICE_BUSY
+    "the network is not existence in library.", // ERR_LIB_NET_EXISTENCE
+    "an error in adding network in library.",   // ERR_LIB_ADD_NETWORK
+    "an error in setting network in library.",  // ERR_LIB_SET_NETWORK
+    "an error in selecting network in library.",// ERR_LIB_SELECT_NETWORK
+    "an error in enable network in library.",   // ERR_LIB_ENABLE_NETWORK
+    "an error in reconnecting net in lib.",     // ERR_LIB_RECONNECT_NETWORK
+    "WRONG PASSWORD!"                           // ERR_LIB_WRONG_PASSWORD
 };
 
 char * openDevice(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)

@@ -9,6 +9,7 @@
 #include "network_manager.h"
 #include "wpa_supplicant_conf.h"
 #include "wifi_intf.h"
+#include "inetd.h"
 
 #define WPA_SSID_LENTH  512
 
@@ -642,7 +643,7 @@ static int wifi_connect_ap_inner(const char *ssid, tKEY_MGMT key_mgmt, const cha
     ret = wifi_command(cmd, netid2, sizeof(netid2));
     if(ret){
         printf("do add network results error!\n");
-        ret = -1;
+        ret = ERR_LIB_ADD_NETWORK;
         event_code = WIFIMG_CMD_OR_PARAMS_ERROR;
         goto end;
     }
@@ -662,7 +663,7 @@ static int wifi_connect_ap_inner(const char *ssid, tKEY_MGMT key_mgmt, const cha
         sprintf(cmd, "REMOVE_NETWORK %s", netid2);
         wifi_command(cmd, reply, sizeof(reply));
 
-        ret = -1;
+        ret = ERR_LIB_SET_NETWORK;
         event_code = WIFIMG_CMD_OR_PARAMS_ERROR;
         goto end;
     }
@@ -680,7 +681,7 @@ static int wifi_connect_ap_inner(const char *ssid, tKEY_MGMT key_mgmt, const cha
             wifi_command(cmd, reply, sizeof(reply));
 
             event_code = WIFIMG_CMD_OR_PARAMS_ERROR;
-            ret = -1;
+            ret = ERR_LIB_SET_NETWORK;
             goto end;
         }
     } else if(key_mgmt == WIFIMG_WPA_PSK || key_mgmt == WIFIMG_WPA2_PSK){
@@ -694,7 +695,7 @@ static int wifi_connect_ap_inner(const char *ssid, tKEY_MGMT key_mgmt, const cha
             sprintf(cmd, "REMOVE_NETWORK %s", netid2);
             wifi_command(cmd, reply, sizeof(reply));
 
-            ret = -1;
+            ret = ERR_LIB_SET_NETWORK;
             event_code = WIFIMG_CMD_OR_PARAMS_ERROR;
             goto end;
         }
@@ -707,7 +708,7 @@ static int wifi_connect_ap_inner(const char *ssid, tKEY_MGMT key_mgmt, const cha
             sprintf(cmd, "REMOVE_NETWORK %s", netid2);
             wifi_command(cmd, reply, sizeof(reply));
 
-            ret = -1;
+            ret = ERR_LIB_INVALID_PASSWORD;
             event_code = WIFIMG_CMD_OR_PARAMS_ERROR;
             goto end;
         }
@@ -721,7 +722,7 @@ static int wifi_connect_ap_inner(const char *ssid, tKEY_MGMT key_mgmt, const cha
             sprintf(cmd, "REMOVE_NETWORK %s", netid2);
             wifi_command(cmd, reply, sizeof(reply));
 
-            ret = -1;
+            ret = ERR_LIB_SET_NETWORK;
             event_code = WIFIMG_CMD_OR_PARAMS_ERROR;
             goto end;
         }
@@ -736,7 +737,7 @@ static int wifi_connect_ap_inner(const char *ssid, tKEY_MGMT key_mgmt, const cha
             sprintf(cmd, "REMOVE_NETWORK %s", netid2);
             wifi_command(cmd, reply, sizeof(reply));
 
-            ret = -1;
+            ret = ERR_LIB_SET_NETWORK;
             event_code = WIFIMG_CMD_OR_PARAMS_ERROR;
             goto end;
         }
@@ -754,7 +755,7 @@ static int wifi_connect_ap_inner(const char *ssid, tKEY_MGMT key_mgmt, const cha
                 sprintf(cmd, "REMOVE_NETWORK %s", netid2);
                 wifi_command(cmd, reply, sizeof(reply));
 
-                ret = -1;
+                ret = ERR_LIB_SET_NETWORK;
                 event_code = WIFIMG_CMD_OR_PARAMS_ERROR;
                 goto end;
             }
@@ -770,7 +771,7 @@ static int wifi_connect_ap_inner(const char *ssid, tKEY_MGMT key_mgmt, const cha
             sprintf(cmd, "REMOVE_NETWORK %s", netid2);
             wifi_command(cmd, reply, sizeof(reply));
 
-            ret = -1;
+            ret = ERR_LIB_SET_NETWORK;
             event_code = WIFIMG_CMD_OR_PARAMS_ERROR;
             goto end;
         }
@@ -782,7 +783,7 @@ static int wifi_connect_ap_inner(const char *ssid, tKEY_MGMT key_mgmt, const cha
         sprintf(cmd, "REMOVE_NETWORK %s", netid2);
         wifi_command(cmd, reply, sizeof(reply));
 
-        ret = -1;
+        ret = ERR_LIB_INVALID_PASSWORD;
         event_code = WIFIMG_KEY_MGMT_NOT_SUPPORT;
         goto end;
     }
@@ -801,7 +802,7 @@ static int wifi_connect_ap_inner(const char *ssid, tKEY_MGMT key_mgmt, const cha
         wifi_command(cmd, reply, sizeof(reply));
 
         event_code = WIFIMG_CMD_OR_PARAMS_ERROR;
-        ret = -1;
+        ret = ERR_LIB_SET_NETWORK;
         goto end;
     }
 
@@ -816,7 +817,7 @@ static int wifi_connect_ap_inner(const char *ssid, tKEY_MGMT key_mgmt, const cha
         wifi_command(cmd, reply, sizeof(reply));
 
         event_code = WIFIMG_CMD_OR_PARAMS_ERROR;
-        ret = -1;
+        ret = ERR_LIB_SELECT_NETWORK;
         goto end;
     }
 
@@ -831,7 +832,7 @@ static int wifi_connect_ap_inner(const char *ssid, tKEY_MGMT key_mgmt, const cha
         wifi_command(cmd, reply, sizeof(reply));
 
         event_code = WIFIMG_CMD_OR_PARAMS_ERROR;
-        ret = -1;
+        ret = ERR_LIB_ENABLE_NETWORK;
         goto end;
     }
 
@@ -849,7 +850,7 @@ static int wifi_connect_ap_inner(const char *ssid, tKEY_MGMT key_mgmt, const cha
         wifi_command(cmd, reply, sizeof(reply));
 
         event_code = WIFIMG_CMD_OR_PARAMS_ERROR;
-        ret = -1;
+        ret = ERR_LIB_RECONNECT_NETWORK;
         goto end;
     }
 
@@ -896,7 +897,7 @@ static int wifi_connect_ap_inner(const char *ssid, tKEY_MGMT key_mgmt, const cha
         sprintf(cmd, "%s", "SAVE_CONFIG");
         wifi_command(cmd, reply, sizeof(reply));
 
-        ret = -1;
+        ret = ERR_LIB_NET_EXISTENCE;
         printf("connect ap inner:still connecting!\n");
         event_code = WIFIMG_NETWORK_NOT_EXIST;
         goto end;
@@ -914,7 +915,7 @@ static int wifi_connect_ap_inner(const char *ssid, tKEY_MGMT key_mgmt, const cha
             sprintf(cmd, "%s", "SAVE_CONFIG");
             wifi_command(cmd, reply, sizeof(reply));
 
-            ret = -1;
+            ret = ERR_LIB_WRONG_PASSWORD;
             event_code = WIFIMG_PASSWORD_FAILED;
             printf("connect ap inner:passwd failed!\n");
             goto end;
@@ -933,7 +934,7 @@ static int wifi_connect_ap_inner(const char *ssid, tKEY_MGMT key_mgmt, const cha
             ret = 0;
         }else{
             event_code = WIFIMG_NETWORK_NOT_EXIST;
-            ret = -1;
+            ret = ERR_LIB_NET_EXISTENCE;
         }
     }else if(state == L2CONNECTED_STATE || state == CONNECTED_STATE){
         if(is_exist == 1 || is_exist == 3){
@@ -950,7 +951,7 @@ static int wifi_connect_ap_inner(const char *ssid, tKEY_MGMT key_mgmt, const cha
         ret = 0;
     }else{
         event_code = WIFIMG_NETWORK_NOT_EXIST;
-        ret = -1;
+        ret = ERR_LIB_NET_EXISTENCE;
     }
 end:
     //enable all networks in wpa_supplicant.conf
@@ -1076,12 +1077,12 @@ static int aw_wifi_connect_ap(const char *ssid, const char *passwd, int event_la
 
     if(gwifi_state == WIFIMG_WIFI_DISABLED){
         printf("aw wifi connect ap wifi disabled\n");
-        return -1;
+        return ERR_LIB_DEVICE_DISABLE;
     }
 
     if(!ssid || !ssid[0]){
         printf("Error: ssid is NULL!\n");
-        ret = -1;
+        ret = ERR_LIB_INVALID_SSID;
         event_code = WIFIMG_CMD_OR_PARAMS_ERROR;
         goto end;
     }
@@ -1089,7 +1090,7 @@ static int aw_wifi_connect_ap(const char *ssid, const char *passwd, int event_la
     state = get_wifi_machine_state();
     printf("aw wifi connect state 0x%x\n", state);
     if(state != CONNECTED_STATE && state != DISCONNECTED_STATE){
-        ret = -1;
+        ret = ERR_LIB_DEVICE_BUSY;
         printf("aw wifi connect ap dev busing\n");
         event_code = WIFIMG_DEV_BUSING_EVENT;
         goto end;
@@ -1098,7 +1099,7 @@ static int aw_wifi_connect_ap(const char *ssid, const char *passwd, int event_la
     /* convert app ssid to wpa scan ssid */
     ret = ssid_app_to_wpa_scan(ssid, wpa_scan_ssid);
     if(ret < 0){
-        ret = -1;
+        ret = ERR_LIB_INVALID_SSID;
         event_code = WIFIMG_CMD_OR_PARAMS_ERROR;
         goto end;
     }else if(ret > 0){
@@ -1124,7 +1125,7 @@ static int aw_wifi_connect_ap(const char *ssid, const char *passwd, int event_la
             update_scan_results();
             get_key_mgmt(wpa_scan_ssid, key);
             if(key[0] == 0){
-                ret = -1;
+                ret = ERR_LIB_NET_EXISTENCE;
                 event_code = WIFIMG_NETWORK_NOT_EXIST;
                 goto end;
             }
@@ -1139,7 +1140,7 @@ static int aw_wifi_connect_ap(const char *ssid, const char *passwd, int event_la
             update_scan_results();
             get_key_mgmt(wpa_scan_ssid, key);
             if((key[1] == 0) && (key[2] == 0)){
-                ret = -1;
+                ret = ERR_LIB_NET_EXISTENCE;
                 event_code = WIFIMG_NETWORK_NOT_EXIST;
                 goto end;
             }
