@@ -51,7 +51,7 @@ static int init_from_etc_file(network_device * device, int device_num)
     memset(config_content, 0, 64);
     sprintf(config_item, "device%d_name", i);
 
-    while(GetValueFromEtcFile(config_path, "device", config_item, config_content, ETC_MAXLINE) == ETC_OK)
+    while(GetValueFromEtcFile(config_path, "device", config_item, config_content, 64) == ETC_OK)
     {
         // get device index in device array
         device_index = get_device_index(device, config_content);
@@ -62,8 +62,7 @@ static int init_from_etc_file(network_device * device, int device_num)
             memset(config_content, 0, 64);
             result = DEVICE_TYPE_DEFAULT;
             
-            sprintf(config_path, "%s", INETD_CONFIG_FILE);
-            if(GetValueFromEtcFile(config_path, config_item, "type", config_content, ETC_MAXLINE) == ETC_OK)
+            if(GetValueFromEtcFile(config_path, config_item, "type", config_content, 64) == ETC_OK)
             {
                 if(strncasecmp(config_content, "wifi", 4) == 0)
                    result = DEVICE_TYPE_WIFI; 
@@ -82,8 +81,7 @@ static int init_from_etc_file(network_device * device, int device_num)
                 // get library name
                 memset(config_content, 0, 64);
             
-                sprintf(config_path, "%s", INETD_CONFIG_FILE);
-                if(GetValueFromEtcFile(config_path, config_item, "engine", config_content, ETC_MAXLINE) == ETC_OK)
+                if(GetValueFromEtcFile(config_path, config_item, "engine", config_content, 64) == ETC_OK)
                 {
                     sprintf(device[device_index].libpath, "%s", config_content);
                     if(result == DEVICE_TYPE_WIFI)
@@ -92,16 +90,13 @@ static int init_from_etc_file(network_device * device, int device_num)
                         memset(wifi_device, 0, sizeof(WiFi_device));
                         device[device_index].device = (void *)wifi_device;
 
-                        sprintf(config_path, "%s", INETD_CONFIG_FILE);
                         GetIntValueFromEtcFile(config_path, config_item, "priority", &(device[device_index].priority));
 
-                        sprintf(config_path, "%s", INETD_CONFIG_FILE);
                         GetIntValueFromEtcFile(config_path, config_item, "scan_time", &(wifi_device->scan_time));
                         if(wifi_device->scan_time == 0)
                             wifi_device->scan_time = DEFAULT_SCAN_TIME;
 #ifdef gengyue
-                        sprintf(config_path, "%s", INETD_CONFIG_FILE);
-                        if(GetValueFromEtcFile(config_path, config_item, "start", config_content, ETC_MAXLINE) == ETC_OK)
+                        if(GetValueFromEtcFile(config_path, config_item, "start", config_content, 64) == ETC_OK)
                         {
                             if(strncasecmp(config_content, "enabled", 7) == 0)
                                 device[device_index].status = DEVICE_STATUS_UP;
