@@ -12,8 +12,11 @@
 #include "wifi_intf.h"
 #include "inetd.h"
 
-//#define CONFIG_CTRL_IFACE_DIR "/var/run/wpa_supplicant"
+#ifdef PLATFORM_R818
 #define CONFIG_CTRL_IFACE_DIR "/etc/wifi/sockets"
+#else
+#define CONFIG_CTRL_IFACE_DIR "/var/run/wpa_supplicant"
+#endif
 
 static hiWiFiDeviceOps wifiOps;
 
@@ -301,6 +304,10 @@ static int open_device(const char * device_name, wifi_context ** context)
     if(device_name == NULL)
     {
         ctrl_ifname = get_default_ifname();
+
+#ifdef PLATFORM_R818
+        free(ctrl_ifname);
+#else
         if(ctrl_ifname)
         {
             sprintf(results, "%s/%s", ctrl_iface_dir, ctrl_ifname);
@@ -311,9 +318,16 @@ static int open_device(const char * device_name, wifi_context ** context)
             * context = NULL;
             return ERR_OPEN_WIFI_DEVICE;
         }
+#endif
     }
     else
+    {
+#ifdef PLATFORM_R818
+        sprintf(results, "%s", ctrl_iface_dir);
+#else
         sprintf(results, "%s/%s", ctrl_iface_dir, device_name);
+#endif
+    }
 
     con = malloc(sizeof(wifi_context));
     memset(con, 0, sizeof(wifi_context));
@@ -323,6 +337,7 @@ static int open_device(const char * device_name, wifi_context ** context)
     memcpy(callback.device_name, device_name, strlen(device_name));
     callback.info_callback = get_wifimanager_info;
 
+printf("================================================================================================== open_device, %s\n", results);
     con->event_label = rand();
     con->p_wifi_interface = aw_wifi_on(wifi_event_handle, con->event_label, results, &callback);
     if(con->p_wifi_interface == NULL)

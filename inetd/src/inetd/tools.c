@@ -165,10 +165,10 @@ int get_if_info(network_device * device)
                 device->speed = wrq.u.bitrate.value / 1000000;
         }
 
+#ifdef PLATFORM_R818
         if(strncasecmp(device->ifname, "wlan0", strlen(device->ifname)) == 0)
             device->type = DEVICE_TYPE_WIFI;
-
-
+#endif
     }
     // TODO: how to judge mobile device
 
