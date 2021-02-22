@@ -120,6 +120,7 @@ char * openDevice(hibus_conn* conn, const char* from_endpoint, const char* to_me
         goto failed;
     }
 
+printf("==================================================================================================================== openDevice, %s\n", device_name);
     // load the library
     if(load_device_library(&device[index]))
     {
@@ -344,6 +345,7 @@ char * getNetworkDevicesStatus(hibus_conn* conn, const char* from_endpoint, cons
         goto failed;
     }
 
+printf("==================================================================================================================== getNetworkDevicesStatus\n");
     for(i = 0; i < MAX_DEVICE_NUM; i++)
     {
         // get interface information
