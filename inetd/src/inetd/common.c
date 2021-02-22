@@ -398,6 +398,7 @@ printf("========================================================================
     }
 failed:
     sprintf(ret_string + strlen(ret_string), "],\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
+printf("=========================================================================================================================== return value: %s\n", ret_string);
     return ret_string;
 }
 
