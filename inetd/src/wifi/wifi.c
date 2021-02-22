@@ -305,9 +305,6 @@ static int open_device(const char * device_name, wifi_context ** context)
     {
         ctrl_ifname = get_default_ifname();
 
-#ifdef PLATFORM_R818
-        free(ctrl_ifname);
-#else
         if(ctrl_ifname)
         {
             sprintf(results, "%s/%s", ctrl_iface_dir, ctrl_ifname);
@@ -318,16 +315,9 @@ static int open_device(const char * device_name, wifi_context ** context)
             * context = NULL;
             return ERR_OPEN_WIFI_DEVICE;
         }
-#endif
     }
     else
-    {
-#ifdef PLATFORM_R818
-        sprintf(results, "%s", ctrl_iface_dir);
-#else
         sprintf(results, "%s/%s", ctrl_iface_dir, device_name);
-#endif
-    }
 
     con = malloc(sizeof(wifi_context));
     memset(con, 0, sizeof(wifi_context));
