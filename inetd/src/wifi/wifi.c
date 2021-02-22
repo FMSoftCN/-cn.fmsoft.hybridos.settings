@@ -12,7 +12,8 @@
 #include "wifi_intf.h"
 #include "inetd.h"
 
-#define CONFIG_CTRL_IFACE_DIR "/var/run/wpa_supplicant"
+//#define CONFIG_CTRL_IFACE_DIR "/var/run/wpa_supplicant"
+#define CONFIG_CTRL_IFACE_DIR "/etc/wifi/sockets"
 
 static hiWiFiDeviceOps wifiOps;
 

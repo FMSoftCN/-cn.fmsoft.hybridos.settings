@@ -248,7 +248,6 @@ int load_device_library(network_device * device)
     void * library_handle = NULL;               // handle of loaded library
 	char * library_error = NULL;                // the error message during loading
 
-printf("================================================================================= load_device_library, %s, %s\n", device->ifname, device->libpath);
     if(strlen(device->libpath) == 0)
     {   
         fprintf(stderr, "INETD: library path is invalid for device %s!", device->ifname);

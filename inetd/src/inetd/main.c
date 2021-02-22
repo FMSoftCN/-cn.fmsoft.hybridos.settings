@@ -76,17 +76,14 @@ static int init_from_etc_file(network_device * device, int device_num)
                     result = DEVICE_TYPE_ETHERNET;
             }
 
-printf("============================================================================================================ 1111111111111111111\n");
             if(result == device[device_index].type)
             {
                 // get library name
                 memset(config_content, 0, 64);
             
-printf("============================================================================================================ 11111111111111111112222222222, %s, %s\n", config_path, config_item);
                 if(GetValueFromEtcFile(config_path, config_item, "engine", config_content, 64) == ETC_OK)
                 {
                     sprintf(device[device_index].libpath, "%s", config_content);
-printf("============================================================================================================ 333333333333, %s, %s, %s, %s\n", config_path, config_item, config_content, device[device_index].libpath);
                     if(result == DEVICE_TYPE_WIFI)
                     {
                         WiFi_device * wifi_device = malloc(sizeof(WiFi_device));
