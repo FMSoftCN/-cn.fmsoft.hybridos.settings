@@ -327,7 +327,6 @@ static int open_device(const char * device_name, wifi_context ** context)
     memcpy(callback.device_name, device_name, strlen(device_name));
     callback.info_callback = get_wifimanager_info;
 
-printf("================================================================================================== open_device, %s\n", results);
     con->event_label = rand();
     con->p_wifi_interface = aw_wifi_on(wifi_event_handle, con->event_label, results, &callback);
     if(con->p_wifi_interface == NULL)
