@@ -2,9 +2,15 @@
 #define __USER_DEFINE__H__
 
 // only for develop
-#define INETD_CONFIG_FILE   "/home/projects/cn.fmsoft.hybridos.settings/inetd/bin/inetd.cfg"
-#define INETD_LIBRARY_PATH  "/home/projects/cn.fmsoft.hybridos.settings/inetd/lib"
-#define DAEMON_WORKING_PATH "/home/gengyue" 
+#ifdef PLATFORM_R818
+    #define INETD_CONFIG_FILE   "/usr/libexec/inetd.cfg"
+    #define INETD_LIBRARY_PATH  "/usr/lib"
+    #define DAEMON_WORKING_PATH "/home/gengyue" 
+#else
+    #define INETD_CONFIG_FILE   "/home/projects/cn.fmsoft.hybridos.settings/inetd/bin/inetd.cfg"
+    #define INETD_LIBRARY_PATH  "/home/projects/cn.fmsoft.hybridos.settings/inetd/lib"
+    #define DAEMON_WORKING_PATH "/home/gengyue" 
+#endif
 
 // dhcp command in user board
 #define DHCP_COMMAND_START  "dhclient"          // for ubuntu 18.04: dhclient wlan0
